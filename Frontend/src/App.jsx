@@ -11,6 +11,7 @@ import VaccinationSchedulesPage from './pages/VaccinationSchedulesPage'
 import BreedingPage from './pages/BreedingPage'
 import ProductionPage from './pages/ProductionPage'
 import AddProductionPage from './pages/AddProductionPage'
+import FinancePage from './pages/FinancePage'
 
 function Layout() {
   const location = useLocation()
@@ -33,6 +34,7 @@ function Layout() {
             <Link to="/vaccination-schedules" className={`px-2 py-4 text-sm font-medium ${isActive('/vaccination-schedules')}`}>Vaccinations</Link>
             <Link to="/breeding" className={`px-2 py-4 text-sm font-medium ${isActive('/breeding')}`}>Breeding</Link>
             <Link to="/production" className={`px-2 py-4 text-sm font-medium ${isActive('/production')}`}>Production</Link>
+            <Link to="/finance" className={`px-2 py-4 text-sm font-medium ${isActive('/finance')}`}>Finance</Link>
           </div>
           <div>
             {token ? (
@@ -70,6 +72,7 @@ function Layout() {
           <Route path="/breeding" element={<BreedingPage />} />
           <Route path="/production" element={<ProductionPage />} />
           <Route path="/production/add" element={<AddProductionPage />} />
+          <Route path="/finance" element={<FinancePage />} />
         </Routes>
       </main>
     </div>

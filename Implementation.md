@@ -2,8 +2,8 @@
 
 **Project:** Enterprise Online Livestock Management System  
 **Last Updated:** 2026-06-16  
-**Current Phase:** Phase 7 — Module 4: Production Yield Analytics ✅ Complete  
-**Current Iteration:** Iteration 7 (Production)
+**Current Phase:** Phase 8 — Module 6: Financial Ledger & Expense Mapping ✅ Complete  
+**Current Iteration:** Iteration 8 (Finance)
 
 ---
 
@@ -11,13 +11,13 @@
 
 | Field            | Value                                                    |
 | ---------------- | -------------------------------------------------------- |
-| **Active Phase** | Phase 8 — Module 6: Financial Ledger & Expense Mapping |
-| **Status**       | 🟢 Ready to start                                        |
-| **Started**      | —                                                         |
-| **Next Actions** | 1. Create `financeController.js` — transactions + P&L summary |
-|                  | 2. Create `routes/finance.js` with all endpoints               |
-|                  | 3. Build financial dashboard + transaction entry form (Frontend) |
-|                  | 4. Build cost-per-head report + P&L charts (Frontend)           |
+| **Active Phase** | Phase 9 — Module 7: Automated Notification & Alerts Engine |
+| **Status**       | 🟢 Ready to start                                            |
+| **Started**      | —                                                             |
+| **Next Actions** | 1. Create `services/alertService.js` — centralized alert creation |
+|                  | 2. Create `services/notificationCron.js` — node-cron daily 06:00  |
+|                  | 3. Create `routes/alerts.js` — list/unread-count/mark-read         |
+|                  | 4. Build notification center UI (bell icon + badge)               |
 
 > **Update this section at the start of every iteration.** Move completed actions out, add the next set.
 
@@ -63,7 +63,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 5   | Module 2 — Health & Veterinary Surveillance       | ✅ Complete | Phases 3, 4  |
 | 6   | Module 3 — Breeding & Reproduction Lifecycle      | ✅ Complete | Phase 3      |
 | 7   | Module 4 — Production Yield Analytics             | ✅ Complete | Phase 3      |
-| 8   | Module 6 — Financial Ledger & Expense Mapping     | ⬜ Pending | Phase 3      |
+| 8   | Module 6 — Financial Ledger & Expense Mapping     | ✅ Complete | Phase 3      |
 | 9   | Module 7 — Automated Notification & Alerts Engine | ⬜ Pending | All modules  |
 | 10  | File Upload Support                               | ⬜ Pending | Phases 3, 5  |
 | 11  | Seed Data & Final Integration                     | ⬜ Pending | All modules  |
@@ -252,27 +252,27 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 ---
 
-### Phase 8 — Module 6: Financial Ledger & Expense Mapping
+### Phase 8 — Module 6: Financial Ledger & Expense Mapping ✅ Complete
 
 **API Endpoints:**
 
-- [ ] `POST /api/v1/finance/transactions` — Record transaction
-- [ ] `GET /api/v1/finance/transactions` — List with filters
-- [ ] `GET /api/v1/finance/summary` — Aggregated P&L
-- [ ] `GET /api/v1/animals/:id/financials` — Cost-per-head
+- [x] `POST /api/v1/finance/transactions` — Record transaction
+- [x] `GET /api/v1/finance/transactions` — List with filters
+- [x] `GET /api/v1/finance/summary` — Aggregated P&L
+- [x] `GET /api/v1/animals/:id/financials` — Cost-per-head
 
 **Business Logic:**
 
-- [ ] PKR currency enforcement on all monetary displays
-- [ ] Net cost-per-head = sum(expenses) - sum(revenue) per animal
-- [ ] RBAC: only Admin accesses financial endpoints
+- [x] PKR currency enforcement on all monetary displays
+- [x] Net cost-per-head = sum(expenses) - sum(revenue) per animal
+- [x] RBAC: only Admin accesses financial endpoints
 
 **Frontend Pages:**
 
-- [ ] Financial dashboard (Admin-only)
-- [ ] Transaction entry form
-- [ ] Cost-per-head report
-- [ ] P&L summary with charts
+- [x] Financial dashboard (Admin-only)
+- [x] Transaction entry form
+- [x] Cost-per-head report
+- [x] P&L summary with charts
 
 ---
 
@@ -423,7 +423,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | TC-SEC-001 | Worker cannot access financial endpoints (expect 403) | ✅ Verified |
 | TC-VAL-002 | Negative production values blocked (expect 400)       | ✅ Verified |
 | TC-TXN-003 | Medication exceeding stock rolls back cleanly         | ⬜ Not run  |
-| TC-FIN-004 | Financial summary uses PKR symbol exclusively         | ⬜ Not run  |
+| TC-FIN-004 | Financial summary uses PKR symbol exclusively         | ✅ Verified |
 
 ---
 
@@ -437,7 +437,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 2026-06-16 | Planning | Updated Frontend scaffolding for Tailwind CSS v4 + Vite plugin setup (no PostCSS, no tailwind.config.js). Verified against latest official docs (Tailwind v4.3). |
 | 2026-06-16 | Planning | Added Current Sprint section and Conventions section (§9). Established API response format, HTTP codes, file naming patterns, SQL patterns, and currency rules.  |     | 2026-06-16 | Planning | Currency changed from £ (GBP) to PKR (Pakistani Rupee). All monetary displays, test cases, and conventions updated. |
 | 2026-06-16 | Phase 1  | Project scaffolding complete. Backend: Node.js + Express + Sequelize + MySQL connectivity verified. 9 tables created. Frontend: Vite + React + TailwindCSS v4 + Axios with JWT interceptor, proxy configured. |
-| 2026-06-16 | Phase 7  | Production Yield Analytics complete. Backend: CRUD with negative value rejection, quarantine block, trailing 3-day average, dashboard with 30-day trends + top animals. Frontend: ProductionPage (Chart.js dashboard with Line/Bar charts), AddProductionPage (form). TC-VAL-002 verified. |
+| 2026-06-16 | Phase 8  | Financial Ledger & Expense Mapping complete. Backend: PKR formatting on all responses, P&L summary with income/expenses/net, cost-per-head calc. Frontend: FinancePage with Doughnut chart, summary cards, transaction form, RBAC enforced (Worker → 403). TC-FIN-004 verified. |
 
 ---
 

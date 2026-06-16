@@ -10,6 +10,7 @@ const healthRecordRoutes = require('./routes/healthRecords');
 const vaccinationScheduleRoutes = require('./routes/vaccinationSchedules');
 const breedingRecordRoutes = require('./routes/breedingRecords');
 const productionLogRoutes = require('./routes/productionLogs');
+const financeRoutes = require('./routes/finance');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,6 +31,7 @@ app.use('/api/v1/health-records', healthRecordRoutes);
 app.use('/api/v1/vaccination-schedules', vaccinationScheduleRoutes);
 app.use('/api/v1/breeding-records', breedingRecordRoutes);
 app.use('/api/v1/production-logs', productionLogRoutes);
+app.use('/api/v1/finance', financeRoutes);
 
 const start = async () => {
   await testConnection();
