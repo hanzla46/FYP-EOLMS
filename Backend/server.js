@@ -12,6 +12,7 @@ const breedingRecordRoutes = require('./routes/breedingRecords');
 const productionLogRoutes = require('./routes/productionLogs');
 const financeRoutes = require('./routes/finance');
 const alertRoutes = require('./routes/alerts');
+const uploadRoutes = require('./routes/uploads');
 const { startCron } = require('./services/notificationCron');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/v1/breeding-records', breedingRecordRoutes);
 app.use('/api/v1/production-logs', productionLogRoutes);
 app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/alerts', alertRoutes);
+app.use('/api/v1/uploads', uploadRoutes);
 
 const start = async () => {
   await testConnection();
