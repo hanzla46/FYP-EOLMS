@@ -5,6 +5,9 @@ import AnimalRegisterPage from './pages/AnimalRegisterPage'
 import InventoryPage from './pages/InventoryPage'
 import AddInventoryPage from './pages/AddInventoryPage'
 import InventoryDetailPage from './pages/InventoryDetailPage'
+import HealthRecordsPage from './pages/HealthRecordsPage'
+import NewHealthRecordPage from './pages/NewHealthRecordPage'
+import VaccinationSchedulesPage from './pages/VaccinationSchedulesPage'
 
 function Layout() {
   const location = useLocation()
@@ -23,6 +26,8 @@ function Layout() {
             <Link to="/" className="font-bold text-lg text-gray-800">EOLMS</Link>
             <Link to="/animals" className={`px-2 py-4 text-sm font-medium ${isActive('/animals')}`}>Animals</Link>
             <Link to="/inventory" className={`px-2 py-4 text-sm font-medium ${isActive('/inventory')}`}>Inventory</Link>
+            <Link to="/health" className={`px-2 py-4 text-sm font-medium ${isActive('/health')}`}>Health</Link>
+            <Link to="/vaccination-schedules" className={`px-2 py-4 text-sm font-medium ${isActive('/vaccination-schedules')}`}>Vaccinations</Link>
           </div>
           <div>
             {token ? (
@@ -54,6 +59,9 @@ function Layout() {
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/inventory/add" element={<AddInventoryPage />} />
           <Route path="/inventory/:id" element={<InventoryDetailPage />} />
+          <Route path="/health" element={<HealthRecordsPage />} />
+          <Route path="/health/new" element={<NewHealthRecordPage />} />
+          <Route path="/vaccination-schedules" element={<VaccinationSchedulesPage />} />
         </Routes>
       </main>
     </div>

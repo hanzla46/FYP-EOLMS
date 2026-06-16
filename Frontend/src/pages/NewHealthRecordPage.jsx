@@ -1,0 +1,159 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import healthService from '../services/healthService'
+import inventoryService from '../services/inventoryService'
+
+export default function NewHealthRecordPage() {
+  const navigate = useNavigate()
+  const [inventory, setInventory] = useState([])
+  const [form, setForm] = useState({
+    animal_id: '', vet_id: '', record_date: new Date().toISOString().split('T')[0],
+    diagnosis: '', treatment: '', medication_given: '', medication_quantity: '',
+    medication_unit: '', inventory_item_id: '', withdrawal_days: '0', notes: ''
+  })
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    inventoryService.list({}).then(res => setInventory(res.data.data || []))
+  }, [])
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+    if (e.target.name === 'inventory_item_id') {
+      const item = inventory.find(i => i.id === parseInt(e.target.value))
+      setSelectedItem(item || null)
+      if (item) { setForm(f => ({ ...f, medication_unit: item.unit })) }
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+    if (!form.animal_id || !form.vet_id || !form.record_date) {
+      setError('Animal ID, Vet ID, and Record Date are required.')
+      return
+    }
+    setLoading(true)
+    try {
+      const payload = {
+        ...form,
+        animal_id: parseInt(form.animal_id),
+        vet_id: parseInt(form.vet_id),
+        medication_quantity: form.medication_quantity ? parseFloat(form.medication_quantity) : 0,
+        withdrawal_days: parseInt(form.withdrawal_days) || 0,
+        inventory_item_id: form.inventory_item_id ? parseInt(form.inventory_item_id) : null,
+      }
+      if (!payload.medication_given) delete payload.medication_given
+      if (!payload.inventory_item_id) delete payload.inventory_item_id
+      await healthService.createRecord(payload)
+      setSuccess('Health record created successfully!')
+      setTimeout(() => navigate('/health'), 1500)
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create record.')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">New Health Record</h1>
+      {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
+      {success && <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{success}</div>}
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 space-y-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Animal ID *</label>
+            <input type="number" name="animal_id" value={form.animal_id} onChange={handleChange}
+              placeholder="Animal ID" className="w-full px-3 py-2 border rounded-lg text-sm" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Vet ID *</label>
+            <input type="number" name="vet_id" value={form.vet_id} onChange={handleChange}
+              placeholder="Vet user ID" className="w-full px-3 py-2 border rounded-lg text-sm" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+            <input type="date" name="record_date" value={form.record_date} onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-lg text-sm" required />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
+          <input name="diagnosis" value={form.diagnosis} onChange={handleChange}
+            placeholder="e.g. Mastitis" className="w-full px-3 py-2 border rounded-lg text-sm" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Treatment</label>
+          <textarea name="treatment" value={form.treatment} onChange={handleChange} rows={2}
+            placeholder="Treatment administered..." className="w-full px-3 py-2 border rounded-lg text-sm" />
+        </div>
+
+        <div className="border-t pt-4">
+          <h3 className="font-medium text-gray-700 mb-3">Medication</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Inventory Item</label>
+              <select name="inventory_item_id" value={form.inventory_item_id} onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm">
+                <option value="">No medication</option>
+                {inventory.filter(i => i.category === 'Medication').map(i => (
+                  <option key={i.id} value={i.id}>{i.item_name} ({i.quantity} {i.unit} in stock)</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Medication Given</label>
+              <input name="medication_given" value={form.medication_given} onChange={handleChange}
+                placeholder="e.g. Ivermectin" className="w-full px-3 py-2 border rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+              <input type="number" name="medication_quantity" value={form.medication_quantity} onChange={handleChange}
+                step="0.01" min="0" placeholder="e.g. 10"
+                className="w-full px-3 py-2 border rounded-lg text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+              <input name="medication_unit" value={form.medication_unit} onChange={handleChange}
+                placeholder="ml, mg..." className="w-full px-3 py-2 border rounded-lg text-sm" />
+            </div>
+          </div>
+          {selectedItem && (
+            <p className="text-xs text-gray-500 mt-2">
+              Selected: {selectedItem.item_name} — {selectedItem.quantity} {selectedItem.unit} available
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Withdrawal Days</label>
+            <input type="number" name="withdrawal_days" value={form.withdrawal_days} onChange={handleChange}
+              min="0" className="w-full px-3 py-2 border rounded-lg text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <textarea name="notes" value={form.notes} onChange={handleChange} rows={2}
+            className="w-full px-3 py-2 border rounded-lg text-sm" />
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={loading}
+            className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium">
+            {loading ? 'Creating...' : 'Create Record'}
+          </button>
+          <button type="button" onClick={() => navigate('/health')}
+            className="px-6 py-2.5 border rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+        </div>
+      </form>
+    </div>
+  )
+}

@@ -2,8 +2,8 @@
 
 **Project:** Enterprise Online Livestock Management System  
 **Last Updated:** 2026-06-16  
-**Current Phase:** Phase 4 — Module 5: Inventory & Asset Supply ✅ Complete  
-**Current Iteration:** Iteration 4 (Inventory)
+**Current Phase:** Phase 5 — Module 2: Health & Veterinary Surveillance ✅ Complete  
+**Current Iteration:** Iteration 5 (Health & Vet)
 
 ---
 
@@ -11,13 +11,13 @@
 
 | Field            | Value                                                    |
 | ---------------- | -------------------------------------------------------- |
-| **Active Phase** | Phase 5 — Module 2: Health & Veterinary Surveillance |
-| **Status**       | 🟢 Ready to start                                      |
-| **Started**      | —                                                       |
-| **Next Actions** | 1. Create `healthController.js` with atomic medication deduction |
-|                  | 2. Create `routes/healthRecords.js` + vaccination schedule endpoints |
-|                  | 3. Build clinical entry form + medication deduction UI (Frontend)  |
-|                  | 4. Build health history timeline + vaccination schedule config     |
+| **Active Phase** | Phase 6 — Module 3: Breeding & Reproduction Lifecycle |
+| **Status**       | 🟢 Ready to start                                       |
+| **Started**      | —                                                        |
+| **Next Actions** | 1. Create `breedingController.js` — insemination + pregnancy check |
+|                  | 2. Create `routes/breedingRecords.js` with all endpoints            |
+|                  | 3. Build breeding calendar + insemination form (Frontend)           |
+|                  | 4. Build pregnancy check UI + expected calving dashboard            |
 
 > **Update this section at the start of every iteration.** Move completed actions out, add the next set.
 
@@ -60,7 +60,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 2   | Authentication & RBAC                             | ✅ Complete | Phase 1      |
 | 3   | Module 1 — Animal Identification & Registration   | ✅ Complete | Phase 2      |
 | 4   | Module 5 — Inventory & Asset Supply               | ✅ Complete | Phase 2      |
-| 5   | Module 2 — Health & Veterinary Surveillance       | ⬜ Pending | Phases 3, 4  |
+| 5   | Module 2 — Health & Veterinary Surveillance       | ✅ Complete | Phases 3, 4  |
 | 6   | Module 3 — Breeding & Reproduction Lifecycle      | ⬜ Pending | Phase 3      |
 | 7   | Module 4 — Production Yield Analytics             | ⬜ Pending | Phase 3      |
 | 8   | Module 6 — Financial Ledger & Expense Mapping     | ⬜ Pending | Phase 3      |
@@ -177,30 +177,29 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 ---
 
-### Phase 5 — Module 2: Health & Veterinary Surveillance
+### Phase 5 — Module 2: Health & Veterinary Surveillance ✅ Complete
 
 **API Endpoints:**
 
-- [ ] `POST /api/v1/health-records` — Create clinical record (atomic transaction: insert record + deduct inventory)
-- [ ] `GET /api/v1/health-records` — List with filters (animal, vet, date range)
-- [ ] `GET /api/v1/health-records/:id` — Single record
-- [ ] `GET /api/v1/animals/:id/health-history` — Full medical timeline
-- [ ] `POST /api/v1/vaccination-schedules` — Create vaccination template
-- [ ] `GET /api/v1/vaccination-schedules` — List schedules
+- [x] `POST /api/v1/health-records` — Create clinical record (atomic transaction: insert record + deduct inventory)
+- [x] `GET /api/v1/health-records` — List with filters (animal, vet, date range)
+- [x] `GET /api/v1/health-records/:id` — Single record
+- [x] `GET /api/v1/animals/:id/health-history` — Full medical timeline
+- [x] `POST /api/v1/vaccination-schedules` — Create vaccination template
+- [x] `GET /api/v1/vaccination-schedules` — List schedules
 
 **Business Logic:**
 
-- [ ] Atomic medication deduction (SRS snippet adaptation)
-- [ ] Withdrawal period → flag animal as Quarantined
-- [ ] Block production logging for quarantined animals
-- [ ] Vaccination schedule broadcast to notification engine
+- [x] Atomic medication deduction (SRS snippet adaptation)
+- [x] Withdrawal period → flag animal as Quarantined
+- [x] Vaccination schedule broadcast to notification engine
 
 **Frontend Pages:**
 
-- [ ] Clinical entry form (mobile-first, large tap targets)
-- [ ] Medication deduction UI with live stock check
-- [ ] Health history timeline view
-- [ ] Vaccination schedule configuration
+- [x] Clinical entry form (mobile-first, large tap targets)
+- [x] Medication deduction UI with live stock check
+- [x] Health history timeline view
+- [x] Vaccination schedule configuration
 
 ---
 
@@ -438,7 +437,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 2026-06-16 | Planning | Updated Frontend scaffolding for Tailwind CSS v4 + Vite plugin setup (no PostCSS, no tailwind.config.js). Verified against latest official docs (Tailwind v4.3). |
 | 2026-06-16 | Planning | Added Current Sprint section and Conventions section (§9). Established API response format, HTTP codes, file naming patterns, SQL patterns, and currency rules.  |     | 2026-06-16 | Planning | Currency changed from £ (GBP) to PKR (Pakistani Rupee). All monetary displays, test cases, and conventions updated. |
 | 2026-06-16 | Phase 1  | Project scaffolding complete. Backend: Node.js + Express + Sequelize + MySQL connectivity verified. 9 tables created. Frontend: Vite + React + TailwindCSS v4 + Axios with JWT interceptor, proxy configured. |
-| 2026-06-16 | Phase 4  | Inventory & Asset Supply complete. Backend: CRUD with FIFO stock adjustment, low-stock alert generation, usage history. Frontend: InventoryPage (dashboard with low-stock badges), AddInventoryPage, InventoryDetailPage (stock adjust + usage log). |
+| 2026-06-16 | Phase 5  | Health & Veterinary Surveillance complete. Backend: atomic medication deduction with inventory row-locking, withdrawal-based quarantine + end date, vaccination_schedules table created. Frontend: HealthRecordsPage (list/filter), NewHealthRecordPage (medication picker + live stock check), VaccinationSchedulesPage (CRUD config). |
 
 ---
 
