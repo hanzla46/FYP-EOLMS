@@ -2,8 +2,8 @@
 
 **Project:** Enterprise Online Livestock Management System  
 **Last Updated:** 2026-06-16  
-**Current Phase:** Phase 3 — Module 1: Animal Identification & Registration ✅ Complete  
-**Current Iteration:** Iteration 3 (Animal ID & Registration)
+**Current Phase:** Phase 4 — Module 5: Inventory & Asset Supply ✅ Complete  
+**Current Iteration:** Iteration 4 (Inventory)
 
 ---
 
@@ -11,14 +11,13 @@
 
 | Field            | Value                                                    |
 | ---------------- | -------------------------------------------------------- |
-| **Active Phase** | Phase 4 — Module 5: Inventory & Asset Supply |
-| **Status**       | 🟢 Ready to start                              |
-| **Started**      | —                                               |
-| **Next Actions** | 1. Create `inventoryController.js` with CRUD + stock adjustments  |
-|                  | 2. Create `routes/inventory.js` with all endpoints                 |
-|                  | 3. Build inventory dashboard with low-stock badges (Frontend)      |
-|                  | 4. Build add/restock form (Frontend)                               |
-|                  | 5. Build item detail with usage history (Frontend)                 |
+| **Active Phase** | Phase 5 — Module 2: Health & Veterinary Surveillance |
+| **Status**       | 🟢 Ready to start                                      |
+| **Started**      | —                                                       |
+| **Next Actions** | 1. Create `healthController.js` with atomic medication deduction |
+|                  | 2. Create `routes/healthRecords.js` + vaccination schedule endpoints |
+|                  | 3. Build clinical entry form + medication deduction UI (Frontend)  |
+|                  | 4. Build health history timeline + vaccination schedule config     |
 
 > **Update this section at the start of every iteration.** Move completed actions out, add the next set.
 
@@ -60,7 +59,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 1   | Project Scaffolding & Database                    | ✅ Complete | —            |
 | 2   | Authentication & RBAC                             | ✅ Complete | Phase 1      |
 | 3   | Module 1 — Animal Identification & Registration   | ✅ Complete | Phase 2      |
-| 4   | Module 5 — Inventory & Asset Supply               | ⬜ Pending | Phase 2      |
+| 4   | Module 5 — Inventory & Asset Supply               | ✅ Complete | Phase 2      |
 | 5   | Module 2 — Health & Veterinary Surveillance       | ⬜ Pending | Phases 3, 4  |
 | 6   | Module 3 — Breeding & Reproduction Lifecycle      | ⬜ Pending | Phase 3      |
 | 7   | Module 4 — Production Yield Analytics             | ⬜ Pending | Phase 3      |
@@ -155,26 +154,26 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 ---
 
-### Phase 4 — Module 5: Inventory & Asset Supply
+### Phase 4 — Module 5: Inventory & Asset Supply ✅ Complete
 
 **API Endpoints:**
 
-- [ ] `POST /api/v1/inventory` — Add item
-- [ ] `GET /api/v1/inventory` — List all items with stock levels
-- [ ] `GET /api/v1/inventory/:id` — Single item detail
-- [ ] `PUT /api/v1/inventory/:id` — Update item
-- [ ] `PATCH /api/v1/inventory/:id/stock` — Manual stock adjustment with audit note
+- [x] `POST /api/v1/inventory` — Add item
+- [x] `GET /api/v1/inventory` — List all items with stock levels
+- [x] `GET /api/v1/inventory/:id` — Single item detail
+- [x] `PUT /api/v1/inventory/:id` — Update item
+- [x] `PATCH /api/v1/inventory/:id/stock` — Manual stock adjustment with audit note
 
 **Business Logic:**
 
-- [ ] Reorder threshold check on every deduction → create alert if below threshold
-- [ ] Stock validation before any dispensing operation
+- [x] Reorder threshold check on every deduction → create alert if below threshold
+- [x] Stock validation before any dispensing operation
 
 **Frontend Pages:**
 
-- [ ] Inventory dashboard with low-stock badges
-- [ ] Add/restock form
-- [ ] Item detail with usage history
+- [x] Inventory dashboard with low-stock badges
+- [x] Add/restock form
+- [x] Item detail with usage history
 
 ---
 
@@ -439,7 +438,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 2026-06-16 | Planning | Updated Frontend scaffolding for Tailwind CSS v4 + Vite plugin setup (no PostCSS, no tailwind.config.js). Verified against latest official docs (Tailwind v4.3). |
 | 2026-06-16 | Planning | Added Current Sprint section and Conventions section (§9). Established API response format, HTTP codes, file naming patterns, SQL patterns, and currency rules.  |     | 2026-06-16 | Planning | Currency changed from £ (GBP) to PKR (Pakistani Rupee). All monetary displays, test cases, and conventions updated. |
 | 2026-06-16 | Phase 1  | Project scaffolding complete. Backend: Node.js + Express + Sequelize + MySQL connectivity verified. 9 tables created. Frontend: Vite + React + TailwindCSS v4 + Axios with JWT interceptor, proxy configured. |
-| 2026-06-16 | Phase 3  | Animal Identification & Registration complete. Backend: CRUD with RFID duplicate check, auto tag generation (LIV-YY-XXXXX), lineage validation, status transitions. Frontend: AnimalsPage (list/filter/paginate), AnimalRegisterPage (RFID/manual toggle), AnimalDetailPage (profile + QR code). All endpoints verified. |
+| 2026-06-16 | Phase 4  | Inventory & Asset Supply complete. Backend: CRUD with FIFO stock adjustment, low-stock alert generation, usage history. Frontend: InventoryPage (dashboard with low-stock badges), AddInventoryPage, InventoryDetailPage (stock adjust + usage log). |
 
 ---
 

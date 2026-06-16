@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate 
 import AnimalsPage from './pages/AnimalsPage'
 import AnimalDetailPage from './pages/AnimalDetailPage'
 import AnimalRegisterPage from './pages/AnimalRegisterPage'
+import InventoryPage from './pages/InventoryPage'
+import AddInventoryPage from './pages/AddInventoryPage'
+import InventoryDetailPage from './pages/InventoryDetailPage'
 
 function Layout() {
   const location = useLocation()
@@ -19,6 +22,7 @@ function Layout() {
           <div className="flex items-center gap-6">
             <Link to="/" className="font-bold text-lg text-gray-800">EOLMS</Link>
             <Link to="/animals" className={`px-2 py-4 text-sm font-medium ${isActive('/animals')}`}>Animals</Link>
+            <Link to="/inventory" className={`px-2 py-4 text-sm font-medium ${isActive('/inventory')}`}>Inventory</Link>
           </div>
           <div>
             {token ? (
@@ -47,6 +51,9 @@ function Layout() {
           <Route path="/animals" element={<AnimalsPage />} />
           <Route path="/animals/register" element={<AnimalRegisterPage />} />
           <Route path="/animals/:id" element={<AnimalDetailPage />} />
+          <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/inventory/add" element={<AddInventoryPage />} />
+          <Route path="/inventory/:id" element={<InventoryDetailPage />} />
         </Routes>
       </main>
     </div>

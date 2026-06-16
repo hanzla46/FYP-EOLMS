@@ -5,6 +5,7 @@ const path = require('path');
 const { testConnection } = require('./config/database');
 const authRoutes = require('./routes/auth');
 const animalRoutes = require('./routes/animals');
+const inventoryRoutes = require('./routes/inventory');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ app.get('/api/v1/health', (req, res) => {
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/animals', animalRoutes);
+app.use('/api/v1/inventory', inventoryRoutes);
 
 const start = async () => {
   await testConnection();
