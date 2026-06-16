@@ -203,7 +203,6 @@ const seed = async () => {
       );
       hrCount++;
     }
-    }
     console.log(`  Created ${hrCount} health records`);
 
     console.log('Seeding breeding records...');
