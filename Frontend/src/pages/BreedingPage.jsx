@@ -13,7 +13,7 @@ export default function BreedingPage() {
   const [form, setForm] = useState({ dam_id: null, sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
   const [formError, setFormError] = useState('')
   const [calvingModal, setCalvingModal] = useState({ open: false, recordId: null })
-  const [calvingForm, setCalvingForm] = useState({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', register_offspring: true })
+  const [calvingForm, setCalvingForm] = useState({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', calving_gender: 'Female', calving_breed: '', register_offspring: true })
 
   useEffect(() => {
     animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''}` }))))
@@ -176,7 +176,7 @@ export default function BreedingPage() {
                       </button>
                     )}
                     {r.pregnancy_confirmed && !r.actual_calving_date && (
-                      <button onClick={() => { setCalvingForm({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', register_offspring: true }); setCalvingModal({ open: true, recordId: r.id }) }}
+                      <button onClick={() => { setCalvingForm({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', calving_gender: 'Female', calving_breed: r.dam_breed || '', register_offspring: true }); setCalvingModal({ open: true, recordId: r.id }) }}
                         className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
                         Record Calving
                       </button>
@@ -218,6 +218,21 @@ export default function BreedingPage() {
                 <input type="number" value={calvingForm.offspring_count} min="1" max="5"
                   onChange={(e) => setCalvingForm({ ...calvingForm, offspring_count: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Gender</label>
+                <select value={calvingForm.calving_gender}
+                  onChange={(e) => setCalvingForm({ ...calvingForm, calving_gender: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm">
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Breed (defaults to dam's breed)</label>
+                <input value={calvingForm.calving_breed}
+                  onChange={(e) => setCalvingForm({ ...calvingForm, calving_breed: e.target.value })}
+                  placeholder="Inherited from dam" className="w-full px-3 py-2 border rounded-lg text-sm" />
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={calvingForm.register_offspring}
