@@ -227,21 +227,31 @@ export default function BreedingPage() {
                   onChange={(e) => updateOffspringCount(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-sm" />
               </div>
-              {calvingForm.register_offspring && calvingForm.calving_genders.map((g, i) => (
-                <div key={i}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Offspring #{i + 1} Gender</label>
-                  <select value={g}
+              {calvingForm.register_offspring && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-gray-600">Gender Split</label>
+                    <span className="text-xs text-gray-500">
+                      {calvingForm.calving_genders.filter(g => g === 'Female').length} F
+                      &middot; {calvingForm.calving_genders.filter(g => g === 'Male').length} M
+                    </span>
+                  </div>
+                  <input type="range" min="0" max={parseInt(calvingForm.offspring_count) || 1}
+                    value={calvingForm.calving_genders.filter(g => g === 'Female').length}
                     onChange={(e) => {
-                      const genders = [...calvingForm.calving_genders]
-                      genders[i] = e.target.value
+                      const females = parseInt(e.target.value)
+                      const total = parseInt(calvingForm.offspring_count) || 1
+                      const genders = []
+                      for (let i = 0; i < total; i++) genders.push(i < females ? 'Female' : 'Male')
                       setCalvingForm({ ...calvingForm, calving_genders: genders })
                     }}
-                    className="w-full px-3 py-2 border rounded-lg text-sm">
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                  </select>
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                  <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                    <span>All M</span>
+                    <span>All F</span>
+                  </div>
                 </div>
-              ))}
+              )}
               {!calvingForm.register_offspring && (
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Gender</label>
