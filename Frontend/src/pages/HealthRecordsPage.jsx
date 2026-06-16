@@ -52,6 +52,7 @@ export default function HealthRecordsPage() {
                 <th className="px-4 py-3 text-left font-medium">Diagnosis</th>
                 <th className="px-4 py-3 text-left font-medium">Medication</th>
                 <th className="px-4 py-3 text-left font-medium">Withdrawal</th>
+                <th className="px-4 py-3 text-center font-medium">Docs</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -63,9 +64,17 @@ export default function HealthRecordsPage() {
                   <td className="px-4 py-3 max-w-xs truncate">{r.diagnosis || '—'}</td>
                   <td className="px-4 py-3">{r.medication_given ? `${r.medication_quantity} ${r.medication_unit}` : '—'}</td>
                   <td className="px-4 py-3">{r.withdrawal_days > 0 ? `${r.withdrawal_days} days` : '—'}</td>
+                  <td className="px-4 py-3 text-center">
+                    {r.attachment_count > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                        {r.attachment_count}
+                      </span>
+                    ) : '—'}
+                  </td>
                 </tr>
               ))}
-              {records.length === 0 && <tr><td colSpan="6" className="px-4 py-8 text-center text-gray-500">No records found.</td></tr>}
+              {records.length === 0 && <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No records found.</td></tr>}
             </tbody>
           </table>
         </div>

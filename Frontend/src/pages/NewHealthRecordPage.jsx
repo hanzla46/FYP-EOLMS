@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import healthService from '../services/healthService'
 import inventoryService from '../services/inventoryService'
+import uploadService from '../services/uploadService'
+import FileUpload from '../components/FileUpload'
 
 export default function NewHealthRecordPage() {
   const navigate = useNavigate()
@@ -15,6 +17,7 @@ export default function NewHealthRecordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
+  const [createdRecordId, setCreatedRecordId] = useState(null)
 
   useEffect(() => {
     inventoryService.list({}).then(res => setInventory(res.data.data || []))
@@ -50,8 +53,8 @@ export default function NewHealthRecordPage() {
       if (!payload.medication_given) delete payload.medication_given
       if (!payload.inventory_item_id) delete payload.inventory_item_id
       await healthService.createRecord(payload)
-      setSuccess('Health record created successfully!')
-      setTimeout(() => navigate('/health'), 1500)
+      setSuccess('Health record created! You can now attach documents below.')
+      setCreatedRecordId(res.data.id)
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to create record.')
     } finally { setLoading(false) }
@@ -154,6 +157,31 @@ export default function NewHealthRecordPage() {
             className="px-6 py-2.5 border rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
         </div>
       </form>
+
+      {createdRecordId && (
+        <div className="mt-6 bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Attach Documents</h3>
+          <div className="space-y-3">
+            <FileUpload
+              onUpload={(file) => uploadService.uploadHealthDocument(createdRecordId, file).then(() => setSuccess('Document uploaded!'))}
+              accept="application/pdf,image/jpeg,image/png"
+              label="Add Document (PDF/Image)"
+              preview={true}
+            />
+            <p className="text-xs text-gray-400">Upload lab reports, prescriptions, or photos.</p>
+          </div>
+          <div className="mt-4 flex gap-3">
+            <button onClick={() => navigate('/health')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+              {`Done — Go to Records`}
+            </button>
+            <button onClick={() => setCreatedRecordId(null)}
+              className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

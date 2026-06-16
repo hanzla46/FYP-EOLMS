@@ -322,9 +322,9 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 **Frontend:**
 
-- [ ] File upload component with preview
-- [ ] Document list in health records
-- [ ] Profile photo display
+- [x] File upload component with preview
+- [x] Document list in health records
+- [x] Profile photo display
 
 ---
 

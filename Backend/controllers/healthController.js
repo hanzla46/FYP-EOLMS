@@ -112,7 +112,8 @@ const list = async (req, res) => {
 
     const [records] = await sequelize.query(
       `SELECT hr.*, a.tag_number AS animal_tag, a.species AS animal_species,
-              u.full_name AS vet_name
+              u.full_name AS vet_name,
+              (SELECT COUNT(*) FROM attachments WHERE entity_type = 'health_record' AND entity_id = hr.id) AS attachment_count
        FROM health_records hr
        JOIN animals a ON hr.animal_id = a.id
        JOIN users u ON hr.vet_id = u.id

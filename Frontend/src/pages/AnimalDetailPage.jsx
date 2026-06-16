@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import QRCode from 'react-qr-code'
 import animalService from '../services/animalService'
+import uploadService from '../services/uploadService'
+import FileUpload from '../components/FileUpload'
 
 export default function AnimalDetailPage() {
   const { id } = useParams()
@@ -150,6 +152,23 @@ export default function AnimalDetailPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
+          {animal.profile_photo_path ? (
+            <div className="mb-4">
+              <img src={uploadService.getFileUrl(animal.profile_photo_path)} alt={animal.tag_number}
+                className="w-48 h-48 object-cover rounded-lg border" />
+            </div>
+          ) : (
+            <div className="mb-4 w-48 h-48 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-400 text-sm">
+              No photo
+            </div>
+          )}
+          <FileUpload
+            onUpload={(file) => uploadService.uploadAnimalPhoto(animal.id, file).then(() => fetchAnimal())}
+            accept="image/jpeg,image/png,image/webp"
+            label="Upload Photo"
+            preview={false}
+          />
+          <div className="w-full border-t my-4" />
           <h3 className="text-sm font-medium text-gray-700 mb-4">QR Code</h3>
           <div className="bg-white p-4 rounded-lg border">
             <QRCode value={animal.tag_number} size={180} level="M" />

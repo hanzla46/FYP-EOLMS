@@ -185,7 +185,23 @@ CREATE TABLE IF NOT EXISTS financial_ledger (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 8. system_alerts
+-- 8. vaccination_schedules
+-- ============================================================
+CREATE TABLE IF NOT EXISTS vaccination_schedules (
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  vaccine_name            VARCHAR(200) NOT NULL,
+  target_species          ENUM('Cattle','Sheep','Goat','All') NOT NULL DEFAULT 'All',
+  age_days                INT,
+  booster_interval_days   INT,
+  notes                   TEXT,
+  created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  INDEX idx_vs_species (target_species)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- 9. system_alerts
 -- ============================================================
 CREATE TABLE IF NOT EXISTS system_alerts (
   id                    INT AUTO_INCREMENT PRIMARY KEY,
@@ -204,7 +220,7 @@ CREATE TABLE IF NOT EXISTS system_alerts (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 9. attachments
+-- 10. attachments
 -- ============================================================
 CREATE TABLE IF NOT EXISTS attachments (
   id            INT AUTO_INCREMENT PRIMARY KEY,
