@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import breedingService from '../services/breedingService'
+import animalService from '../services/animalService'
+import SearchableSelect from '../components/SearchableSelect'
 
 export default function BreedingPage() {
   const [records, setRecords] = useState([])
+  const [animals, setAnimals] = useState([])
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 })
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ dam_id: '', sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
+  const [form, setForm] = useState({ dam_id: null, sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
   const [formError, setFormError] = useState('')
-  const [pregForm, setPregForm] = useState({ id: '', pregnancy_confirmed: 'true', pregnancy_check_date: new Date().toISOString().split('T')[0] })
+
+  useEffect(() => {
+    animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''}` }))))
+  }, [])
 
   const fetchRecords = async (page = 1) => {
     setLoading(true)
@@ -27,12 +33,12 @@ export default function BreedingPage() {
     e.preventDefault()
     setFormError('')
     if (!form.dam_id || !form.sire_identity || !form.insemination_date) {
-      setFormError('Dam ID, sire identity, and date are required.')
+      setFormError('Dam, sire identity, and date are required.')
       return
     }
     try {
-      await breedingService.logInsemination({ ...form, dam_id: parseInt(form.dam_id) })
-      setForm({ dam_id: '', sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
+      await breedingService.logInsemination({ ...form })
+      setForm({ dam_id: null, sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
       setShowForm(false)
       fetchRecords()
     } catch (err) {
@@ -73,9 +79,7 @@ export default function BreedingPage() {
           {formError && <p className="text-sm text-red-600">{formError}</p>}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Dam ID *</label>
-              <input type="number" value={form.dam_id} onChange={(e) => setForm({ ...form, dam_id: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
+              <SearchableSelect label="Dam (Female)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female..." />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Sire Identity *</label>

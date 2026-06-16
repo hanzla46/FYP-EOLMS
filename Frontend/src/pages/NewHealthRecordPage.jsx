@@ -2,33 +2,44 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import healthService from '../services/healthService'
 import inventoryService from '../services/inventoryService'
+import userService from '../services/userService'
+import animalService from '../services/animalService'
 import uploadService from '../services/uploadService'
+import SearchableSelect from '../components/SearchableSelect'
 import FileUpload from '../components/FileUpload'
 
 export default function NewHealthRecordPage() {
   const navigate = useNavigate()
+  const [animals, setAnimals] = useState([])
+  const [vets, setVets] = useState([])
   const [inventory, setInventory] = useState([])
   const [form, setForm] = useState({
-    animal_id: '', vet_id: '', record_date: new Date().toISOString().split('T')[0],
+    animal_id: null, vet_id: null, record_date: new Date().toISOString().split('T')[0],
     diagnosis: '', treatment: '', medication_given: '', medication_quantity: '',
-    medication_unit: '', inventory_item_id: '', withdrawal_days: '0', notes: ''
+    medication_unit: '', inventory_item_id: null, withdrawal_days: '0', notes: ''
   })
-  const [selectedItem, setSelectedItem] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [createdRecordId, setCreatedRecordId] = useState(null)
 
   useEffect(() => {
-    inventoryService.list({}).then(res => setInventory(res.data.data || []))
+    animalService.list({ limit: 200 }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || 'Unknown'} · ${a.gender}` }))))
+    userService.list({ role: 'Vet' }).then(res => setVets(res.data.data.map(u => ({ id: u.id, label: u.full_name, sub: u.role }))))
+    inventoryService.list({}).then(res => setInventory(res.data.data.filter(i => i.category === 'Medication').map(i => ({ id: i.id, label: i.item_name, sub: `${i.quantity} ${i.unit} in stock` }))))
   }, [])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
-    if (e.target.name === 'inventory_item_id') {
-      const item = inventory.find(i => i.id === parseInt(e.target.value))
-      setSelectedItem(item || null)
-      if (item) { setForm(f => ({ ...f, medication_unit: item.unit })) }
+  }
+
+  const handleSelect = (field, value) => {
+    setForm({ ...form, [field]: value })
+    if (field === 'inventory_item_id') {
+      const item = inventory.find(i => i.id === value)
+      if (item) {
+        const originalItem = inventory.find(i => i.id === value)
+      }
     }
   }
 
@@ -37,22 +48,19 @@ export default function NewHealthRecordPage() {
     setError('')
     setSuccess('')
     if (!form.animal_id || !form.vet_id || !form.record_date) {
-      setError('Animal ID, Vet ID, and Record Date are required.')
+      setError('Animal, Vet, and Record Date are required.')
       return
     }
     setLoading(true)
     try {
       const payload = {
         ...form,
-        animal_id: parseInt(form.animal_id),
-        vet_id: parseInt(form.vet_id),
         medication_quantity: form.medication_quantity ? parseFloat(form.medication_quantity) : 0,
         withdrawal_days: parseInt(form.withdrawal_days) || 0,
-        inventory_item_id: form.inventory_item_id ? parseInt(form.inventory_item_id) : null,
+        inventory_item_id: form.inventory_item_id || null,
       }
       if (!payload.medication_given) delete payload.medication_given
-      if (!payload.inventory_item_id) delete payload.inventory_item_id
-      await healthService.createRecord(payload)
+      const res = await healthService.createRecord(payload)
       setSuccess('Health record created! You can now attach documents below.')
       setCreatedRecordId(res.data.id)
     } catch (err) {
@@ -68,15 +76,11 @@ export default function NewHealthRecordPage() {
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 space-y-4">
         <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Animal ID *</label>
-            <input type="number" name="animal_id" value={form.animal_id} onChange={handleChange}
-              placeholder="Animal ID" className="w-full px-3 py-2 border rounded-lg text-sm" required />
+          <div className="col-span-1">
+            <SearchableSelect label="Animal" value={form.animal_id} onChange={(v) => handleSelect('animal_id', v)} options={animals} placeholder="Search animal tag..." required />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vet ID *</label>
-            <input type="number" name="vet_id" value={form.vet_id} onChange={handleChange}
-              placeholder="Vet user ID" className="w-full px-3 py-2 border rounded-lg text-sm" required />
+          <div className="col-span-1">
+            <SearchableSelect label="Vet" value={form.vet_id} onChange={(v) => handleSelect('vet_id', v)} options={vets} placeholder="Search vet..." required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
@@ -100,18 +104,11 @@ export default function NewHealthRecordPage() {
         <div className="border-t pt-4">
           <h3 className="font-medium text-gray-700 mb-3">Medication</h3>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Inventory Item</label>
-              <select name="inventory_item_id" value={form.inventory_item_id} onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">No medication</option>
-                {inventory.filter(i => i.category === 'Medication').map(i => (
-                  <option key={i.id} value={i.id}>{i.item_name} ({i.quantity} {i.unit} in stock)</option>
-                ))}
-              </select>
+            <div className="col-span-2">
+              <SearchableSelect label="Inventory Item" value={form.inventory_item_id} onChange={(v) => handleSelect('inventory_item_id', v)} options={inventory} placeholder="Search medication..." />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Medication Given</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Medication Name</label>
               <input name="medication_given" value={form.medication_given} onChange={handleChange}
                 placeholder="e.g. Ivermectin" className="w-full px-3 py-2 border rounded-lg text-sm" />
             </div>
@@ -121,17 +118,7 @@ export default function NewHealthRecordPage() {
                 step="0.01" min="0" placeholder="e.g. 10"
                 className="w-full px-3 py-2 border rounded-lg text-sm" />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Unit</label>
-              <input name="medication_unit" value={form.medication_unit} onChange={handleChange}
-                placeholder="ml, mg..." className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
           </div>
-          {selectedItem && (
-            <p className="text-xs text-gray-500 mt-2">
-              Selected: {selectedItem.item_name} — {selectedItem.quantity} {selectedItem.unit} available
-            </p>
-          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -173,7 +160,7 @@ export default function NewHealthRecordPage() {
           <div className="mt-4 flex gap-3">
             <button onClick={() => navigate('/health')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-              {`Done — Go to Records`}
+              Done — Go to Records
             </button>
             <button onClick={() => setCreatedRecordId(null)}
               className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">

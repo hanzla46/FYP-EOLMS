@@ -1,30 +1,35 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import productionService from '../services/productionService'
+import animalService from '../services/animalService'
+import SearchableSelect from '../components/SearchableSelect'
 
 export default function AddProductionPage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ animal_id: '', log_date: new Date().toISOString().split('T')[0], production_type: 'Milk', quantity: '', unit: 'L', notes: '' })
+  const [animals, setAnimals] = useState([])
+  const [form, setForm] = useState({ animal_id: null, log_date: new Date().toISOString().split('T')[0], production_type: 'Milk', quantity: '', unit: 'L', notes: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    animalService.list({ limit: 200, status: 'Active' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''} · ${a.gender}` }))))
+  }, [])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!form.animal_id || !form.quantity) { setError('Animal ID and quantity are required.'); return }
+    if (!form.animal_id || !form.quantity) { setError('Animal and quantity are required.'); return }
     if (parseFloat(form.quantity) < 0) { setError('Quantity cannot be negative.'); return }
     setLoading(true)
     try {
-      await productionService.log({ ...form, animal_id: parseInt(form.animal_id), quantity: parseFloat(form.quantity) })
+      await productionService.log({ ...form, quantity: parseFloat(form.quantity) })
       navigate('/production')
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to log production.')
     } finally { setLoading(false) }
   }
-
-  const units = { Milk: 'L', Weight: 'kg', Wool: 'kg' }
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -34,9 +39,7 @@ export default function AddProductionPage() {
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Animal ID *</label>
-            <input type="number" name="animal_id" value={form.animal_id} onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm" required />
+            <SearchableSelect label="Animal" value={form.animal_id} onChange={(v) => setForm({ ...form, animal_id: v })} options={animals} placeholder="Search animal..." required />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>

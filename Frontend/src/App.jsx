@@ -16,6 +16,7 @@ import ProductionPage from './pages/ProductionPage'
 import AddProductionPage from './pages/AddProductionPage'
 import FinancePage from './pages/FinancePage'
 import AlertsPage from './pages/AlertsPage'
+import UsersPage from './pages/UsersPage'
 import NotificationBell from './components/NotificationBell'
 
 function Layout() {
@@ -56,6 +57,7 @@ function Layout() {
           <div className="flex items-center gap-4">
             <NotificationBell />
             <span className="text-sm text-gray-500">{user.full_name} <span className="text-xs text-gray-400">({user.role})</span></span>
+            {isAdmin && <Link to="/users" className="text-xs text-blue-600 hover:underline">Users</Link>}
             {isAdmin && <Link to="/register" className="text-xs text-blue-600 hover:underline">Register User</Link>}
             <button onClick={() => { logout(); navigate('/') }}
               className="text-sm text-red-600 hover:underline">Logout</button>
@@ -91,6 +93,7 @@ function Layout() {
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/users" element={<UsersPage />} />
         </Routes>
       </main>
     </div>

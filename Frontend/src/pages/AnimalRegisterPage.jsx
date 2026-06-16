@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import animalService from '../services/animalService'
+import SearchableSelect from '../components/SearchableSelect'
 
 export default function AnimalRegisterPage() {
   const navigate = useNavigate()
+  const [animals, setAnimals] = useState([])
   const [form, setForm] = useState({
     species: 'Cattle', breed: '', gender: 'Female', date_of_birth: '',
-    dam_id: '', sire_identity: '', rfid_tag: '', weight_kg: '', color: '', notes: ''
+    dam_id: null, sire_identity: '', rfid_tag: '', weight_kg: '', color: '', notes: ''
   })
-  const [useManualTag, setUseManualTag] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || 'Unknown'}` }))))
+  }, [])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -27,7 +32,6 @@ export default function AnimalRegisterPage() {
       if (!payload.weight_kg) delete payload.weight_kg
       if (!payload.color) delete payload.color
       if (!payload.notes) delete payload.notes
-      if (payload.dam_id) payload.dam_id = parseInt(payload.dam_id)
       if (payload.weight_kg) payload.weight_kg = parseFloat(payload.weight_kg)
 
       const res = await animalService.register(payload)
@@ -86,26 +90,15 @@ export default function AnimalRegisterPage() {
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-sm font-medium text-gray-700">RFID Tag</label>
-            <button type="button" onClick={() => setUseManualTag(!useManualTag)}
-              className="text-xs text-blue-600 hover:underline">
-              {useManualTag ? 'Auto-generate' : 'Enter manually'}
-            </button>
-          </div>
-          {useManualTag ? (
-            <input name="rfid_tag" value={form.rfid_tag} onChange={handleChange}
-              placeholder="Enter RFID tag" className="w-full px-3 py-2 border rounded-lg text-sm font-mono" />
-          ) : (
-            <p className="text-sm text-gray-500 italic">Tag will be auto-generated (e.g. LIV-26-XXXXX)</p>
-          )}
+          <label className="block text-sm font-medium text-gray-700 mb-1">RFID Tag</label>
+          <input name="rfid_tag" value={form.rfid_tag} onChange={handleChange}
+            placeholder="Enter RFID tag (or leave blank for auto)" className="w-full px-3 py-2 border rounded-lg text-sm font-mono" />
+          <p className="text-xs text-gray-400 mt-1">Leave blank to auto-generate tag (e.g. LIV-26-XXXXX)</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dam (Mother) ID</label>
-            <input type="number" name="dam_id" value={form.dam_id} onChange={handleChange}
-              placeholder="Animal ID" className="w-full px-3 py-2 border rounded-lg text-sm" />
+            <SearchableSelect label="Dam (Mother)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female animal..." />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Sire Identity</label>

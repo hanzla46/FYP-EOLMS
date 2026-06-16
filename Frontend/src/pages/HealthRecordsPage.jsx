@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import healthService from '../services/healthService'
+import animalService from '../services/animalService'
+import SearchableSelect from '../components/SearchableSelect'
 
 export default function HealthRecordsPage() {
   const [records, setRecords] = useState([])
+  const [animals, setAnimals] = useState([])
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 })
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ animal_id: '', vet_id: '', date_from: '', date_to: '' })
+  const [filters, setFilters] = useState({ animal_id: null, date_from: '', date_to: '' })
 
   const fetchRecords = async (page = 1) => {
     setLoading(true)
@@ -20,7 +23,10 @@ export default function HealthRecordsPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchRecords() }, [])
+  useEffect(() => { 
+    fetchRecords()
+    animalService.list({ limit: 200 }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''}` }))))
+  }, [])
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -31,13 +37,20 @@ export default function HealthRecordsPage() {
         </Link>
       </div>
 
-      <div className="flex gap-3 mb-6 flex-wrap">
-        <input placeholder="Animal ID" value={filters.animal_id} onChange={(e) => setFilters({ ...filters, animal_id: e.target.value })}
-          className="px-3 py-2 border rounded-lg text-sm w-28" />
-        <input type="date" placeholder="From" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-          className="px-3 py-2 border rounded-lg text-sm" />
-        <input type="date" placeholder="To" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-          className="px-3 py-2 border rounded-lg text-sm" />
+      <div className="flex gap-3 mb-6 flex-wrap items-end">
+        <div className="w-64">
+          <SearchableSelect label="Animal" value={filters.animal_id} onChange={(v) => setFilters({ ...filters, animal_id: v })} options={animals} placeholder="All animals..." />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+          <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+            className="px-3 py-2 border rounded-lg text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+          <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+            className="px-3 py-2 border rounded-lg text-sm" />
+        </div>
         <button onClick={() => fetchRecords(1)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Filter</button>
       </div>
 

@@ -113,4 +113,25 @@ const me = async (req, res) => {
   }
 };
 
-module.exports = { register, login, me };
+const listUsers = async (req, res) => {
+  try {
+    const { role, search } = req.query;
+    let where = 'WHERE 1=1';
+    const replacements = {};
+
+    if (role) { where += ' AND role = :role'; replacements.role = role; }
+    if (search) { where += ' AND (full_name LIKE :search OR username LIKE :search)'; replacements.search = `%${search}%`; }
+
+    const [users] = await sequelize.query(
+      `SELECT id, username, email, full_name, role, is_active, created_at FROM users ${where} ORDER BY full_name ASC`,
+      { replacements }
+    );
+
+    res.json({ message: 'Users retrieved.', data: users, total: users.length });
+  } catch (error) {
+    console.error('List users error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+module.exports = { register, login, me, listUsers };
