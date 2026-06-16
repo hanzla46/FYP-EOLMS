@@ -12,6 +12,8 @@ export default function BreedingPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ dam_id: null, sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
   const [formError, setFormError] = useState('')
+  const [calvingModal, setCalvingModal] = useState({ open: false, recordId: null })
+  const [calvingForm, setCalvingForm] = useState({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', register_offspring: true })
 
   useEffect(() => {
     animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''}` }))))
@@ -49,6 +51,17 @@ export default function BreedingPage() {
   const handlePregnancyCheck = async (recordId) => {
     try {
       await breedingService.pregnancyCheck(recordId, { pregnancy_confirmed: true, pregnancy_check_date: new Date().toISOString().split('T')[0] })
+      fetchRecords()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed.')
+    }
+  }
+
+  const handleRecordCalving = async (e) => {
+    e.preventDefault()
+    try {
+      await breedingService.recordCalving(calvingModal.recordId, calvingForm)
+      setCalvingModal({ open: false, recordId: null })
       fetchRecords()
     } catch (err) {
       alert(err.response?.data?.error || 'Failed.')
@@ -162,6 +175,12 @@ export default function BreedingPage() {
                         Confirm Pregnant
                       </button>
                     )}
+                    {r.pregnancy_confirmed && !r.actual_calving_date && (
+                      <button onClick={() => { setCalvingForm({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', register_offspring: true }); setCalvingModal({ open: true, recordId: r.id }) }}
+                        className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                        Record Calving
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -179,6 +198,42 @@ export default function BreedingPage() {
               className="px-3 py-1 border rounded text-sm disabled:opacity-50">Prev</button>
             <button disabled={pagination.page >= pagination.totalPages} onClick={() => fetchRecords(pagination.page + 1)}
               className="px-3 py-1 border rounded text-sm disabled:opacity-50">Next</button>
+          </div>
+        </div>
+      )}
+
+      {calvingModal.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">Record Calving</h2>
+            <form onSubmit={handleRecordCalving} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Calving Date</label>
+                <input type="date" value={calvingForm.actual_calving_date}
+                  onChange={(e) => setCalvingForm({ ...calvingForm, actual_calving_date: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Offspring Count</label>
+                <input type="number" value={calvingForm.offspring_count} min="1" max="5"
+                  onChange={(e) => setCalvingForm({ ...calvingForm, offspring_count: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={calvingForm.register_offspring}
+                  onChange={(e) => setCalvingForm({ ...calvingForm, register_offspring: e.target.checked })}
+                  className="rounded" />
+                <span className="text-gray-700">Auto-register offspring as new animals</span>
+              </label>
+              {calvingForm.register_offspring && (
+                <p className="text-xs text-blue-600">Offspring will be created with auto-generated tags and linked to this dam.</p>
+              )}
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">Save</button>
+                <button type="button" onClick={() => setCalvingModal({ open: false, recordId: null })}
+                  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
