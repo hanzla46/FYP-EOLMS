@@ -3,6 +3,7 @@ const router = express.Router();
 const { register, list, getById, update, updateStatus } = require('../controllers/animalController');
 const { getHealthHistory } = require('../controllers/healthController');
 const { getBreedingHistory } = require('../controllers/breedingController');
+const { productionStats } = require('../controllers/productionController');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 
@@ -11,6 +12,7 @@ router.get('/', auth, list);
 router.get('/:id', auth, getById);
 router.get('/:id/health-history', auth, getHealthHistory);
 router.get('/:id/breeding-history', auth, getBreedingHistory);
+router.get('/:id/production-stats', auth, productionStats);
 router.put('/:id', auth, authorize('Admin', 'Vet'), update);
 router.patch('/:id/status', auth, authorize('Admin', 'Vet'), updateStatus);
 

@@ -9,6 +9,8 @@ import HealthRecordsPage from './pages/HealthRecordsPage'
 import NewHealthRecordPage from './pages/NewHealthRecordPage'
 import VaccinationSchedulesPage from './pages/VaccinationSchedulesPage'
 import BreedingPage from './pages/BreedingPage'
+import ProductionPage from './pages/ProductionPage'
+import AddProductionPage from './pages/AddProductionPage'
 
 function Layout() {
   const location = useLocation()
@@ -30,6 +32,7 @@ function Layout() {
             <Link to="/health" className={`px-2 py-4 text-sm font-medium ${isActive('/health')}`}>Health</Link>
             <Link to="/vaccination-schedules" className={`px-2 py-4 text-sm font-medium ${isActive('/vaccination-schedules')}`}>Vaccinations</Link>
             <Link to="/breeding" className={`px-2 py-4 text-sm font-medium ${isActive('/breeding')}`}>Breeding</Link>
+            <Link to="/production" className={`px-2 py-4 text-sm font-medium ${isActive('/production')}`}>Production</Link>
           </div>
           <div>
             {token ? (
@@ -65,6 +68,8 @@ function Layout() {
           <Route path="/health/new" element={<NewHealthRecordPage />} />
           <Route path="/vaccination-schedules" element={<VaccinationSchedulesPage />} />
           <Route path="/breeding" element={<BreedingPage />} />
+          <Route path="/production" element={<ProductionPage />} />
+          <Route path="/production/add" element={<AddProductionPage />} />
         </Routes>
       </main>
     </div>
