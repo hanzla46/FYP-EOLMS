@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import QRCode from 'react-qr-code'
 import animalService from '../services/animalService'
+import breedService from '../services/breedService'
 import uploadService from '../services/uploadService'
 import FileUpload from '../components/FileUpload'
 
@@ -13,6 +14,7 @@ export default function AnimalDetailPage() {
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({})
+  const [breeds, setBreeds] = useState([])
   const [statusForm, setStatusForm] = useState('')
 
   const fetchAnimal = async () => {
@@ -50,6 +52,7 @@ export default function AnimalDetailPage() {
       color: animal.color || '',
       notes: animal.notes || '',
     })
+    breedService.list(animal.species).then(res => setBreeds(res.data.data))
     setEditing(true)
   }
 
@@ -190,6 +193,13 @@ export default function AnimalDetailPage() {
                     <textarea value={val} onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" />
                   ) : key === 'date_of_birth' ? (
                     <input type="date" value={val} onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                  ) : key === 'breed' ? (
+                    <>
+                      <input value={val} onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })} list="breed-edit-list" className="w-full px-3 py-2 border rounded-lg text-sm" />
+                      <datalist id="breed-edit-list">
+                        {breeds.map(b => <option key={b} value={b} />)}
+                      </datalist>
+                    </>
                   ) : (
                     <input value={val} onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
                   )}

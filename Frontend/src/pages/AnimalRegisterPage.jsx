@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import animalService from '../services/animalService'
+import breedService from '../services/breedService'
 import SearchableSelect from '../components/SearchableSelect'
 
 export default function AnimalRegisterPage() {
   const navigate = useNavigate()
   const [animals, setAnimals] = useState([])
+  const [breeds, setBreeds] = useState([])
   const [form, setForm] = useState({
     species: 'Cattle', breed: '', gender: 'Female', date_of_birth: '',
     dam_id: null, sire_identity: '', rfid_tag: '', weight_kg: '', color: '', notes: ''
@@ -15,7 +17,8 @@ export default function AnimalRegisterPage() {
 
   useEffect(() => {
     animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || 'Unknown'}` }))))
-  }, [])
+    breedService.list(form.species).then(res => setBreeds(res.data.data))
+  }, [form.species])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -72,8 +75,11 @@ export default function AnimalRegisterPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Breed</label>
-          <input name="breed" value={form.breed} onChange={handleChange}
+          <input name="breed" value={form.breed} onChange={handleChange} list="breed-list"
             placeholder="e.g. Holstein, Beetal" className="w-full px-3 py-2 border rounded-lg text-sm" />
+          <datalist id="breed-list">
+            {breeds.map(b => <option key={b} value={b} />)}
+          </datalist>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

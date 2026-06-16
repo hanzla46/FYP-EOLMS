@@ -326,4 +326,23 @@ const updateStatus = async (req, res) => {
   }
 };
 
-module.exports = { register, list, getById, update, updateStatus };
+const getBreeds = async (req, res) => {
+  try {
+    const { species } = req.query;
+    let where = "WHERE breed IS NOT NULL AND breed != ''";
+    const replacements = {};
+    if (species) { where += ' AND species = :species'; replacements.species = species; }
+
+    const [breeds] = await sequelize.query(
+      `SELECT DISTINCT breed FROM animals ${where} ORDER BY breed ASC`,
+      { replacements }
+    );
+
+    res.json({ message: 'Breeds retrieved.', data: breeds.map(b => b.breed) });
+  } catch (error) {
+    console.error('Get breeds error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+module.exports = { register, list, getById, update, updateStatus, getBreeds };
