@@ -50,24 +50,37 @@ export default function NewHealthRecordPage() {
   }
 
   const handleSelect = (field, value) => {
-    setForm({ ...form, [field]: value })
+    if (field === 'vaccination_schedule_id' && value) {
+      const schedule = vaccinationSchedules.find(s => s.id === value)
+      if (schedule && schedule.inventory_item_id) {
+        const opt = inventory.find(i => i.id === schedule.inventory_item_id)
+        setSelectedMedication(opt || null)
+        setForm(f => ({
+          ...f,
+          vaccination_schedule_id: value,
+          inventory_item_id: schedule.inventory_item_id,
+          medication_given: opt ? opt.label : '',
+          medication_unit: opt ? (opt.unit || '') : '',
+        }))
+        return
+      }
+      setForm(f => ({ ...f, vaccination_schedule_id: value }))
+      return
+    }
     if (field === 'inventory_item_id' && value) {
       const opt = inventory.find(i => i.id === value)
       if (opt) {
         setSelectedMedication(opt)
-        setForm(f => ({ ...f, medication_given: opt.label, medication_unit: opt.unit || '' }))
+        setForm(f => ({ ...f, inventory_item_id: value, medication_given: opt.label, medication_unit: opt.unit || '' }))
+        return
       }
     }
     if (field === 'inventory_item_id' && !value) {
       setSelectedMedication(null)
-      setForm(f => ({ ...f, medication_given: '', medication_unit: '' }))
+      setForm(f => ({ ...f, inventory_item_id: null, medication_given: '', medication_unit: '' }))
+      return
     }
-    if (field === 'vaccination_schedule_id' && value) {
-      const schedule = vaccinationSchedules.find(s => s.id === value)
-      if (schedule && schedule.inventory_item_id) {
-        handleSelect('inventory_item_id', schedule.inventory_item_id)
-      }
-    }
+    setForm(f => ({ ...f, [field]: value }))
   }
 
   const handleSubmit = async (e) => {
