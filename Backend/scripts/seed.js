@@ -140,20 +140,21 @@ const seed = async () => {
     console.log(`  Created ${inventoryItems.length} inventory items`);
 
     console.log('Seeding vaccination schedules...');
+    const vaccineInvId = invIds[4]; // Vaccine FMD inventory item
     const schedules = [
-      { name: 'FMD Vaccine', species: 'Cattle', age: 90, booster: 180 },
-      { name: 'FMD Vaccine', species: 'Sheep', age: 90, booster: 180 },
-      { name: 'FMD Vaccine', species: 'Goat', age: 90, booster: 180 },
-      { name: 'Anthrax Vaccine', species: 'All', age: 180, booster: 365 },
-      { name: 'Brucellosis Vaccine', species: 'Cattle', age: 120, booster: null },
-      { name: 'PPR Vaccine', species: 'Goat', age: 90, booster: 365 },
-      { name: 'PPR Vaccine', species: 'Sheep', age: 90, booster: 365 },
+      { name: 'FMD Vaccine', species: 'Cattle', age: 90, booster: 180, inv: vaccineInvId },
+      { name: 'FMD Vaccine', species: 'Sheep', age: 90, booster: 180, inv: vaccineInvId },
+      { name: 'FMD Vaccine', species: 'Goat', age: 90, booster: 180, inv: vaccineInvId },
+      { name: 'Anthrax Vaccine', species: 'All', age: 180, booster: 365, inv: null },
+      { name: 'Brucellosis Vaccine', species: 'Cattle', age: 120, booster: null, inv: null },
+      { name: 'PPR Vaccine', species: 'Goat', age: 90, booster: 365, inv: null },
+      { name: 'PPR Vaccine', species: 'Sheep', age: 90, booster: 365, inv: null },
     ];
     for (const s of schedules) {
       await sequelize.query(
-        `INSERT INTO vaccination_schedules (vaccine_name, target_species, age_days, booster_interval_days)
-         VALUES (:n, :s, :a, :b)`,
-        { replacements: { n: s.name, s: s.species, a: s.age, b: s.booster } }
+        `INSERT INTO vaccination_schedules (vaccine_name, target_species, age_days, booster_interval_days, inventory_item_id)
+         VALUES (:n, :s, :a, :b, :inv)`,
+        { replacements: { n: s.name, s: s.species, a: s.age, b: s.booster, inv: s.inv } }
       );
     }
     console.log(`  Created ${schedules.length} vaccination schedules`);

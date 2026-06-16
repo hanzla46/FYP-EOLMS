@@ -193,11 +193,16 @@ CREATE TABLE IF NOT EXISTS vaccination_schedules (
   target_species          ENUM('Cattle','Sheep','Goat','All') NOT NULL DEFAULT 'All',
   age_days                INT,
   booster_interval_days   INT,
+  inventory_item_id       INT,
   notes                   TEXT,
   created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-  INDEX idx_vs_species (target_species)
+  INDEX idx_vs_species (target_species),
+  INDEX idx_vs_inv (inventory_item_id),
+
+  CONSTRAINT fk_vs_inv
+    FOREIGN KEY (inventory_item_id) REFERENCES inventory(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- ============================================================
