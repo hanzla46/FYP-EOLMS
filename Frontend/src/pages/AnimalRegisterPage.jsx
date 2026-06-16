@@ -98,7 +98,16 @@ export default function AnimalRegisterPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <SearchableSelect label="Dam (Mother)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female animal..." />
+            {animals.length > 0 ? (
+              <SearchableSelect label="Dam (Mother)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female animal..." />
+            ) : (
+              <>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dam (Mother) ID</label>
+                <input type="number" name="dam_id" value={form.dam_id || ''} onChange={(e) => setForm({ ...form, dam_id: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="No females registered yet" className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <p className="text-xs text-gray-400 mt-1">Enter animal ID if known (optional).</p>
+              </>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Sire Identity</label>

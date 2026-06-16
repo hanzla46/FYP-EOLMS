@@ -79,7 +79,15 @@ export default function BreedingPage() {
           {formError && <p className="text-sm text-red-600">{formError}</p>}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <SearchableSelect label="Dam (Female)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female..." />
+              {animals.length > 0 ? (
+                <SearchableSelect label="Dam (Female)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female..." />
+              ) : (
+                <>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Dam (Female) ID</label>
+                  <input type="number" value={form.dam_id || ''} onChange={(e) => setForm({ ...form, dam_id: e.target.value ? parseInt(e.target.value) : null })}
+                    placeholder="No females registered yet" className="w-full px-3 py-2 border rounded-lg text-sm" />
+                </>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Sire Identity *</label>
