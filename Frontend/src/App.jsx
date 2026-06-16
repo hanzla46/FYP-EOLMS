@@ -12,6 +12,8 @@ import BreedingPage from './pages/BreedingPage'
 import ProductionPage from './pages/ProductionPage'
 import AddProductionPage from './pages/AddProductionPage'
 import FinancePage from './pages/FinancePage'
+import AlertsPage from './pages/AlertsPage'
+import NotificationBell from './components/NotificationBell'
 
 function Layout() {
   const location = useLocation()
@@ -36,9 +38,10 @@ function Layout() {
             <Link to="/production" className={`px-2 py-4 text-sm font-medium ${isActive('/production')}`}>Production</Link>
             <Link to="/finance" className={`px-2 py-4 text-sm font-medium ${isActive('/finance')}`}>Finance</Link>
           </div>
-          <div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
             {token ? (
-              <button onClick={() => { localStorage.removeItem('token'); navigate('/login') }}
+              <button onClick={() => { localStorage.removeItem('token'); navigate('/') }}
                 className="text-sm text-red-600 hover:underline">Logout</button>
             ) : (
               <Link to="/login" className="text-sm text-blue-600 hover:underline">Login</Link>
@@ -73,6 +76,7 @@ function Layout() {
           <Route path="/production" element={<ProductionPage />} />
           <Route path="/production/add" element={<AddProductionPage />} />
           <Route path="/finance" element={<FinancePage />} />
+          <Route path="/alerts" element={<AlertsPage />} />
         </Routes>
       </main>
     </div>

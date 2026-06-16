@@ -2,8 +2,8 @@
 
 **Project:** Enterprise Online Livestock Management System  
 **Last Updated:** 2026-06-16  
-**Current Phase:** Phase 8 — Module 6: Financial Ledger & Expense Mapping ✅ Complete  
-**Current Iteration:** Iteration 8 (Finance)
+**Current Phase:** Phase 9 — Module 7: Automated Notification & Alerts Engine ✅ Complete  
+**Current Iteration:** Iteration 9 (Notifications)
 
 ---
 
@@ -11,13 +11,12 @@
 
 | Field            | Value                                                    |
 | ---------------- | -------------------------------------------------------- |
-| **Active Phase** | Phase 9 — Module 7: Automated Notification & Alerts Engine |
-| **Status**       | 🟢 Ready to start                                            |
-| **Started**      | —                                                             |
-| **Next Actions** | 1. Create `services/alertService.js` — centralized alert creation |
-|                  | 2. Create `services/notificationCron.js` — node-cron daily 06:00  |
-|                  | 3. Create `routes/alerts.js` — list/unread-count/mark-read         |
-|                  | 4. Build notification center UI (bell icon + badge)               |
+| **Active Phase** | Phase 10 — File Upload Support |
+| **Status**       | 🟢 Ready to start               |
+| **Started**      | —                                |
+| **Next Actions** | 1. Configure Multer middleware (local uploads/, file type/size limits) |
+|                  | 2. Create upload routes — animal photo + health document               |
+|                  | 3. Add file upload component + preview to frontend                     |
 
 > **Update this section at the start of every iteration.** Move completed actions out, add the next set.
 
@@ -64,7 +63,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 6   | Module 3 — Breeding & Reproduction Lifecycle      | ✅ Complete | Phase 3      |
 | 7   | Module 4 — Production Yield Analytics             | ✅ Complete | Phase 3      |
 | 8   | Module 6 — Financial Ledger & Expense Mapping     | ✅ Complete | Phase 3      |
-| 9   | Module 7 — Automated Notification & Alerts Engine | ⬜ Pending | All modules  |
+| 9   | Module 7 — Automated Notification & Alerts Engine | ✅ Complete | All modules  |
 | 10  | File Upload Support                               | ⬜ Pending | Phases 3, 5  |
 | 11  | Seed Data & Final Integration                     | ⬜ Pending | All modules  |
 
@@ -276,36 +275,36 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 ---
 
-### Phase 9 — Module 7: Automated Notification & Alerts Engine
+### Phase 9 — Module 7: Automated Notification & Alerts Engine ✅ Complete
 
 **Database:**
 
-- [ ] `system_alerts` table (alert_id, alert_type, severity, message, reference_entity_type, reference_entity_id,
-      is_read, created_at)
+- [x] `system_alerts` table (alert_id, alert_type, severity, message, reference_entity_type, reference_entity_id,
+       is_read, created_at)
 
 **Service:**
 
-- [ ] `services/alertService.js` — centralized alert creation
-- [ ] `services/notificationCron.js` — node-cron daily job (06:00)
+- [x] `services/alertService.js` — centralized alert creation
+- [x] `services/notificationCron.js` — node-cron daily job (06:00)
 
 **Cron Checks:**
 
-- [ ] Vaccinations due within 7 days
-- [ ] Calving dates within 14 days
-- [ ] Withdrawal periods ending today → clear quarantine
-- [ ] Low-stock items
+- [x] Vaccinations due within 7 days
+- [x] Calving dates within 14 days
+- [x] Withdrawal periods ending today → clear quarantine
+- [x] Low-stock items
 
 **API Endpoints:**
 
-- [ ] `GET /api/v1/alerts` — List with filters
-- [ ] `PATCH /api/v1/alerts/:id/read` — Mark read
-- [ ] `GET /api/v1/alerts/unread-count` — Badge counter
+- [x] `GET /api/v1/alerts` — List with filters
+- [x] `PATCH /api/v1/alerts/:id/read` — Mark read
+- [x] `GET /api/v1/alerts/unread-count` — Badge counter
 
 **Frontend:**
 
-- [ ] Notification center (bell icon + badge)
-- [ ] Alerts list page
-- [ ] Dashboard alert cards
+- [x] Notification center (bell icon + badge)
+- [x] Alerts list page
+- [x] Dashboard alert cards
 
 ---
 
@@ -437,7 +436,7 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 2026-06-16 | Planning | Updated Frontend scaffolding for Tailwind CSS v4 + Vite plugin setup (no PostCSS, no tailwind.config.js). Verified against latest official docs (Tailwind v4.3). |
 | 2026-06-16 | Planning | Added Current Sprint section and Conventions section (§9). Established API response format, HTTP codes, file naming patterns, SQL patterns, and currency rules.  |     | 2026-06-16 | Planning | Currency changed from £ (GBP) to PKR (Pakistani Rupee). All monetary displays, test cases, and conventions updated. |
 | 2026-06-16 | Phase 1  | Project scaffolding complete. Backend: Node.js + Express + Sequelize + MySQL connectivity verified. 9 tables created. Frontend: Vite + React + TailwindCSS v4 + Axios with JWT interceptor, proxy configured. |
-| 2026-06-16 | Phase 8  | Financial Ledger & Expense Mapping complete. Backend: PKR formatting on all responses, P&L summary with income/expenses/net, cost-per-head calc. Frontend: FinancePage with Doughnut chart, summary cards, transaction form, RBAC enforced (Worker → 403). TC-FIN-004 verified. |
+| 2026-06-16 | Phase 9  | Notification & Alerts Engine complete. Backend: alertService for centralized alert creation, node-cron daily at 06:00 (calving due, withdrawal ended, low stock, vaccination due). Frontend: NotificationBell (badge counter + polling), AlertsPage (list/filter/mark-read). |
 
 ---
 

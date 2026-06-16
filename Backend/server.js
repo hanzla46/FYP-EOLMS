@@ -11,6 +11,8 @@ const vaccinationScheduleRoutes = require('./routes/vaccinationSchedules');
 const breedingRecordRoutes = require('./routes/breedingRecords');
 const productionLogRoutes = require('./routes/productionLogs');
 const financeRoutes = require('./routes/finance');
+const alertRoutes = require('./routes/alerts');
+const { startCron } = require('./services/notificationCron');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,12 +34,14 @@ app.use('/api/v1/vaccination-schedules', vaccinationScheduleRoutes);
 app.use('/api/v1/breeding-records', breedingRecordRoutes);
 app.use('/api/v1/production-logs', productionLogRoutes);
 app.use('/api/v1/finance', financeRoutes);
+app.use('/api/v1/alerts', alertRoutes);
 
 const start = async () => {
   await testConnection();
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    startCron();
   });
 };
 
