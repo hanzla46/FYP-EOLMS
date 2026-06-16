@@ -1,4 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import AnimalsPage from './pages/AnimalsPage'
 import AnimalDetailPage from './pages/AnimalDetailPage'
 import AnimalRegisterPage from './pages/AnimalRegisterPage'
@@ -18,7 +21,19 @@ import NotificationBell from './components/NotificationBell'
 function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const token = localStorage.getItem('token')
+  const { user, loading, logout, isAdmin } = useAuth()
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50"><p className="text-gray-500">Loading...</p></div>
+  }
+
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    )
+  }
 
   const isActive = (path) => location.pathname.startsWith(path)
     ? 'text-blue-600 border-b-2 border-blue-600'
@@ -40,12 +55,10 @@ function Layout() {
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell />
-            {token ? (
-              <button onClick={() => { localStorage.removeItem('token'); navigate('/') }}
-                className="text-sm text-red-600 hover:underline">Logout</button>
-            ) : (
-              <Link to="/login" className="text-sm text-blue-600 hover:underline">Login</Link>
-            )}
+            <span className="text-sm text-gray-500">{user.full_name} <span className="text-xs text-gray-400">({user.role})</span></span>
+            {isAdmin && <Link to="/register" className="text-xs text-blue-600 hover:underline">Register User</Link>}
+            <button onClick={() => { logout(); navigate('/') }}
+              className="text-sm text-red-600 hover:underline">Logout</button>
           </div>
         </div>
       </nav>
@@ -77,6 +90,7 @@ function Layout() {
           <Route path="/production/add" element={<AddProductionPage />} />
           <Route path="/finance" element={<FinancePage />} />
           <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
       </main>
     </div>
@@ -86,7 +100,9 @@ function Layout() {
 function App() {
   return (
     <Router>
-      <Layout />
+      <AuthProvider>
+        <Layout />
+      </AuthProvider>
     </Router>
   )
 }
