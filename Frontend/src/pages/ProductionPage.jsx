@@ -29,21 +29,24 @@ export default function ProductionPage() {
 
   const chartData = () => {
     if (!dashboard) return null
-    const milkDates = dashboard.by_date
-      .filter(d => d.production_type === 'Milk')
-      .sort((a, b) => a.log_date.localeCompare(b.log_date))
-      .slice(-30)
+    const byType = {}
+    dashboard.by_date.forEach(d => {
+      if (!byType[d.production_type]) byType[d.production_type] = {}
+      byType[d.production_type][d.log_date?.split('T')[0]] = parseFloat(d.daily_total)
+    })
+
+    const allDates = [...new Set(dashboard.by_date.map(d => d.log_date?.split('T')[0]))].sort()
+    const colors = { Milk: 'rgb(59, 130, 246)', Weight: 'rgb(16, 185, 129)', Wool: 'rgb(245, 158, 11)' }
 
     return {
-      labels: milkDates.map(d => d.log_date?.split('T')[0]),
-      datasets: [{
-        label: 'Milk Production (L)',
-        data: milkDates.map(d => parseFloat(d.daily_total)),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        fill: true,
+      labels: allDates.slice(-30),
+      datasets: Object.entries(byType).map(([type, dateMap]) => ({
+        label: `${type} Production`,
+        data: allDates.slice(-30).map(d => dateMap[d] || null),
+        borderColor: colors[type] || '#888',
+        backgroundColor: 'transparent',
         tension: 0.3,
-      }],
+      })),
     }
   }
 
@@ -96,7 +99,7 @@ export default function ProductionPage() {
           {dashboard.by_date.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="font-medium text-gray-700 mb-4">Milk Trend (30 days)</h3>
+                <h3 className="font-medium text-gray-700 mb-4">Production Trends (30 days)</h3>
                 {chartData() && <Line data={chartData()} options={{ responsive: true, plugins: { legend: { display: false } } }} />}
               </div>
               <div className="bg-white rounded-xl shadow p-6">

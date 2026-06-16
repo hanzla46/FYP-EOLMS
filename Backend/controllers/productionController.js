@@ -1,4 +1,5 @@
 const { sequelize } = require('../config/database');
+const { createAlert } = require('../services/alertService');
 
 const logProduction = async (req, res) => {
   try {
@@ -44,6 +45,28 @@ const logProduction = async (req, res) => {
     const [log] = await sequelize.query('SELECT * FROM production_logs WHERE id = :id', {
       replacements: { id: result.insertId || result },
     });
+
+    const [recent] = await sequelize.query(
+      `SELECT quantity FROM production_logs
+       WHERE animal_id = :aid AND production_type = :ptype AND id != :id
+       ORDER BY log_date DESC LIMIT 4`,
+      { replacements: { aid: animal_id, ptype: production_type, id: log[0].id } }
+    );
+
+    if (recent.length >= 3) {
+      const avg = recent.slice(0, 3).reduce((s, r) => s + parseFloat(r.quantity), 0) / 3;
+      const current = parseFloat(quantity);
+      if (current < avg * 0.8) {
+        const pctDrop = ((1 - current / avg) * 100).toFixed(0);
+        await createAlert({
+          alert_type: 'ProductionDrop',
+          severity: 'Warning',
+          message: `Production drop detected: ${log[0].id} for animal #${animal_id} dropped ${pctDrop}% (${current} vs ${avg.toFixed(1)} avg).`,
+          reference_entity_type: 'animal',
+          reference_entity_id: animal_id,
+        });
+      }
+    }
 
     res.status(201).json({ message: 'Production logged.', id: log[0].id, data: log[0] });
   } catch (error) {

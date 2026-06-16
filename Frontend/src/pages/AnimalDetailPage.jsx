@@ -4,6 +4,7 @@ import QRCode from 'react-qr-code'
 import animalService from '../services/animalService'
 import breedService from '../services/breedService'
 import uploadService from '../services/uploadService'
+import productionService from '../services/productionService'
 import FileUpload from '../components/FileUpload'
 
 export default function AnimalDetailPage() {
@@ -16,11 +17,13 @@ export default function AnimalDetailPage() {
   const [editForm, setEditForm] = useState({})
   const [breeds, setBreeds] = useState([])
   const [statusForm, setStatusForm] = useState('')
+  const [productionStats, setProductionStats] = useState(null)
 
   const fetchAnimal = async () => {
     try {
       const res = await animalService.getById(id)
       setAnimal(res.data.data)
+      productionService.animalStats(id).then(r => setProductionStats(r.data.data)).catch(() => {})
     } catch (err) {
       setError('Animal not found.')
     } finally {
@@ -128,6 +131,35 @@ export default function AnimalDetailPage() {
               <div className="text-xs text-green-600">Production Logs</div>
             </div>
           </div>
+
+          {productionStats && productionStats.stats.length > 0 && (
+            <div className="border-t pt-4 mb-4">
+              <span className="text-xs text-gray-500 block mb-2">Production Summary</span>
+              <div className="grid grid-cols-2 gap-3">
+                {productionStats.stats.map((s) => (
+                  <div key={s.production_type} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-gray-700">{s.production_type}</span>
+                      <span className="text-xs text-gray-400">{s.total_logs} logs</span>
+                    </div>
+                    <div className="text-lg font-bold text-gray-800">
+                      {parseFloat(s.total_quantity).toLocaleString()}
+                      <span className="text-xs font-normal text-gray-400 ml-1">{s.production_type === 'Milk' ? 'L' : 'kg'}</span>
+                    </div>
+                    <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                      <span>Avg: {parseFloat(s.avg_quantity).toFixed(1)}</span>
+                      <span>Max: {parseFloat(s.max_quantity).toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {Object.keys(productionStats.daily_averages).length > 0 && (
+                <div className="mt-2 text-xs text-gray-500">
+                  3-day avg: {Object.entries(productionStats.daily_averages).map(([t, v]) => `${t} ${v}`).join(', ')}
+                </div>
+              )}
+            </div>
+          )}
 
           {animal.notes && (
             <div className="border-t pt-4">
