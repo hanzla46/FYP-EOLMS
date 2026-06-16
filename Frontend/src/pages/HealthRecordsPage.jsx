@@ -75,7 +75,7 @@ export default function HealthRecordsPage() {
                   <td className="px-4 py-3"><Link to={`/animals/${r.animal_id}`} className="text-blue-600 hover:underline">{r.animal_tag}</Link></td>
                   <td className="px-4 py-3">{r.vet_name}</td>
                   <td className="px-4 py-3 max-w-xs truncate">{r.diagnosis || '—'}</td>
-                  <td className="px-4 py-3">{r.medication_given ? `${r.medication_quantity} ${r.medication_unit}` : '—'}</td>
+                  <td className="px-4 py-3">{r.medication_given ? `${r.medication_given} — ${r.medication_quantity} ${r.medication_unit}` : '—'}</td>
                   <td className="px-4 py-3">{r.withdrawal_days > 0 ? `${r.withdrawal_days} days` : '—'}</td>
                   <td className="px-4 py-3 text-center">
                     {r.attachment_count > 0 ? (
