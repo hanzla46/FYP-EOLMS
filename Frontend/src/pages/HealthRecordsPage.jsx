@@ -62,7 +62,7 @@ export default function HealthRecordsPage() {
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-left font-medium">Animal</th>
                 <th className="px-4 py-3 text-left font-medium">Vet</th>
-                <th className="px-4 py-3 text-left font-medium">Diagnosis</th>
+                <th className="px-4 py-3 text-left font-medium">Diagnosis / Vaccination</th>
                 <th className="px-4 py-3 text-left font-medium">Medication</th>
                 <th className="px-4 py-3 text-left font-medium">Withdrawal</th>
                 <th className="px-4 py-3 text-center font-medium">Docs</th>
@@ -74,7 +74,7 @@ export default function HealthRecordsPage() {
                   <td className="px-4 py-3">{r.record_date?.split('T')[0]}</td>
                   <td className="px-4 py-3"><Link to={`/animals/${r.animal_id}`} className="text-blue-600 hover:underline">{r.animal_tag}</Link></td>
                   <td className="px-4 py-3">{r.vet_name}</td>
-                  <td className="px-4 py-3 max-w-xs truncate">{r.diagnosis || '—'}</td>
+                  <td className="px-4 py-3">{r.vaccination_schedule_name || r.diagnosis || '—'}</td>
                   <td className="px-4 py-3">{r.medication_given ? `${r.medication_given} — ${r.medication_quantity} ${r.medication_unit}` : '—'}</td>
                   <td className="px-4 py-3">{r.withdrawal_days > 0 ? `${r.withdrawal_days} days` : '—'}</td>
                   <td className="px-4 py-3 text-center">

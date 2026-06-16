@@ -162,7 +162,7 @@ const seed = async () => {
     console.log('Seeding health records...');
     const diagnoses = ['Mastitis', 'Foot Rot', 'Bloat', 'Pneumonia', 'Anthrax suspected', 'Wound', 'Diarrhea', 'Milk Fever', 'Ketosis', 'Laminitis'];
     let hrCount = 0;
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 35; i++) {
       const aId = pick(animalIds);
       const vetId = pick([vetSarahId, vetAhmedId]);
       const date = new Date(2026, 0, 1);
@@ -183,6 +183,26 @@ const seed = async () => {
         }
       );
       hrCount++;
+    }
+
+    // Add 5 vaccination records linked to FMD schedule (vaccination_schedule_id = 1)
+    for (let i = 0; i < 5; i++) {
+      const aId = pick(animalIds);
+      const vetId = pick([vetSarahId, vetAhmedId]);
+      const date = new Date(2026, 0, 1);
+      date.setDate(date.getDate() + random(0, 165));
+
+      await sequelize.query(
+        `INSERT INTO health_records (animal_id, vet_id, record_date, diagnosis, treatment, medication_given, medication_quantity, medication_unit, inventory_item_id, vaccination_schedule_id, withdrawal_days, created_by)
+         VALUES (:aid, :vid, :dt, 'FMD Vaccination', 'Administered FMD vaccine per schedule.', 'Vaccine FMD', :mqty, 'doses', :iid, :vsid, 0, :cb)`,
+        {
+          replacements: {
+            aid: aId, vid: vetId, dt: dateStr(date), mqty: 1, iid: vaccineInvId, vsid: 1, cb: vetId,
+          },
+        }
+      );
+      hrCount++;
+    }
     }
     console.log(`  Created ${hrCount} health records`);
 

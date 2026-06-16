@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS health_records (
   medication_quantity  DECIMAL(10,2),
   medication_unit      VARCHAR(20),
   inventory_item_id    INT,
+  vaccination_schedule_id INT,
   withdrawal_days      INT DEFAULT 0,
   withdrawal_end_date  DATE,
   notes                TEXT,
@@ -78,13 +79,16 @@ CREATE TABLE IF NOT EXISTS health_records (
   INDEX idx_hr_vet (vet_id),
   INDEX idx_hr_date (record_date),
   INDEX idx_hr_withdrawal (withdrawal_end_date),
+  INDEX idx_hr_vs (vaccination_schedule_id),
 
   CONSTRAINT fk_hr_animal
     FOREIGN KEY (animal_id) REFERENCES animals(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_hr_vet
     FOREIGN KEY (vet_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_hr_created_by
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_hr_vaccination
+    FOREIGN KEY (vaccination_schedule_id) REFERENCES vaccination_schedules(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 -- ============================================================

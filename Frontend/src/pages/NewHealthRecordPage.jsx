@@ -5,6 +5,7 @@ import inventoryService from '../services/inventoryService'
 import userService from '../services/userService'
 import animalService from '../services/animalService'
 import uploadService from '../services/uploadService'
+import vaccinationService from '../services/vaccinationService'
 import SearchableSelect from '../components/SearchableSelect'
 import FileUpload from '../components/FileUpload'
 
@@ -14,10 +15,11 @@ export default function NewHealthRecordPage() {
   const [vets, setVets] = useState([])
   const [inventory, setInventory] = useState([])
   const [inventoryData, setInventoryData] = useState([])
+  const [vaccinationSchedules, setVaccinationSchedules] = useState([])
   const [form, setForm] = useState({
     animal_id: null, vet_id: null, record_date: new Date().toISOString().split('T')[0],
     diagnosis: '', treatment: '', medication_given: '', medication_quantity: '',
-    medication_unit: '', inventory_item_id: null, withdrawal_days: '0', notes: ''
+    medication_unit: '', inventory_item_id: null, vaccination_schedule_id: null, withdrawal_days: '0', notes: ''
   })
   const [selectedMedication, setSelectedMedication] = useState(null)
   const [error, setError] = useState('')
@@ -32,6 +34,14 @@ export default function NewHealthRecordPage() {
       const meds = res.data.data.filter(i => i.category === 'Medication')
       setInventoryData(meds)
       setInventory(meds.map(i => ({ id: i.id, label: i.item_name, sub: `${i.quantity} ${i.unit} in stock`, unit: i.unit })))
+    })
+    vaccinationService.list({}).then(res => {
+      setVaccinationSchedules(res.data.data.map(v => ({
+        id: v.id, label: v.vaccine_name,
+        sub: `${v.target_species} · ${v.inventory_item_id ? `${v.inventory_stock} ${v.inventory_unit} in stock` : 'No stock linked'}`,
+        inventory_item_id: v.inventory_item_id,
+        inventory_item_name: v.inventory_item_name,
+      })))
     })
   }, [])
 
@@ -51,6 +61,12 @@ export default function NewHealthRecordPage() {
     if (field === 'inventory_item_id' && !value) {
       setSelectedMedication(null)
       setForm(f => ({ ...f, medication_given: '', medication_unit: '' }))
+    }
+    if (field === 'vaccination_schedule_id' && value) {
+      const schedule = vaccinationSchedules.find(s => s.id === value)
+      if (schedule && schedule.inventory_item_id) {
+        handleSelect('inventory_item_id', schedule.inventory_item_id)
+      }
     }
   }
 
@@ -110,6 +126,12 @@ export default function NewHealthRecordPage() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Treatment</label>
           <textarea name="treatment" value={form.treatment} onChange={handleChange} rows={2}
             placeholder="Treatment administered..." className="w-full px-3 py-2 border rounded-lg text-sm" />
+        </div>
+
+        <div className="border-t pt-4">
+          <h3 className="font-medium text-gray-700 mb-3">Vaccination (optional)</h3>
+          <SearchableSelect label="Vaccination Schedule" value={form.vaccination_schedule_id} onChange={(v) => handleSelect('vaccination_schedule_id', v)} options={vaccinationSchedules} placeholder="Select vaccination given..." />
+          <p className="text-xs text-gray-400 mt-1">Selecting a vaccination schedule will auto-fill the linked medication below.</p>
         </div>
 
         <div className="border-t pt-4">

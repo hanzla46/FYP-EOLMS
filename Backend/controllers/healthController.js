@@ -6,7 +6,7 @@ const createRecord = async (req, res) => {
     const {
       animal_id, vet_id, record_date, diagnosis, treatment,
       medication_given, medication_quantity, medication_unit,
-      inventory_item_id, withdrawal_days, notes
+      inventory_item_id, vaccination_schedule_id, withdrawal_days, notes
     } = req.body;
 
     if (!animal_id || !vet_id || !record_date) {
@@ -65,14 +65,15 @@ const createRecord = async (req, res) => {
 
     const [result] = await sequelize.query(
       `INSERT INTO health_records (animal_id, vet_id, record_date, diagnosis, treatment, medication_given,
-        medication_quantity, medication_unit, inventory_item_id, withdrawal_days, withdrawal_end_date, notes, created_by)
+        medication_quantity, medication_unit, inventory_item_id, vaccination_schedule_id, withdrawal_days, withdrawal_end_date, notes, created_by)
        VALUES (:animal_id, :vet_id, :record_date, :diagnosis, :treatment, :medication_given,
-        :medication_quantity, :medication_unit, :inventory_item_id, :withdrawal_days, :withdrawal_end_date, :notes, :created_by)`,
+        :medication_quantity, :medication_unit, :inventory_item_id, :vaccination_schedule_id, :withdrawal_days, :withdrawal_end_date, :notes, :created_by)`,
       {
         replacements: {
           animal_id, vet_id, record_date, diagnosis: diagnosis || null, treatment: treatment || null,
           medication_given: medication_given || null, medication_quantity: medication_quantity || 0,
           medication_unit: medication_unit || null, inventory_item_id: inventory_item_id || null,
+          vaccination_schedule_id: vaccination_schedule_id || null,
           withdrawal_days: withdrawal_days || 0, withdrawal_end_date: withdrawalEndDate,
           notes: notes || null, created_by: req.user.user_id,
         },
@@ -113,10 +114,12 @@ const list = async (req, res) => {
     const [records] = await sequelize.query(
       `SELECT hr.*, a.tag_number AS animal_tag, a.species AS animal_species,
               u.full_name AS vet_name,
+              vs.vaccine_name AS vaccination_schedule_name,
               (SELECT COUNT(*) FROM attachments WHERE entity_type = 'health_record' AND entity_id = hr.id) AS attachment_count
        FROM health_records hr
        JOIN animals a ON hr.animal_id = a.id
        JOIN users u ON hr.vet_id = u.id
+       LEFT JOIN vaccination_schedules vs ON hr.vaccination_schedule_id = vs.id
        ${where}
        ORDER BY hr.record_date DESC
        LIMIT :limit OFFSET :offset`,
@@ -145,10 +148,11 @@ const getById = async (req, res) => {
 
     const [records] = await sequelize.query(
       `SELECT hr.*, a.tag_number AS animal_tag, a.species AS animal_species,
-              u.full_name AS vet_name
+              u.full_name AS vet_name, vs.vaccine_name AS vaccination_schedule_name
        FROM health_records hr
        JOIN animals a ON hr.animal_id = a.id
        JOIN users u ON hr.vet_id = u.id
+       LEFT JOIN vaccination_schedules vs ON hr.vaccination_schedule_id = vs.id
        WHERE hr.id = :id`,
       { replacements: { id } }
     );
@@ -174,9 +178,11 @@ const getHealthHistory = async (req, res) => {
     const { id } = req.params;
 
     const [records] = await sequelize.query(
-      `SELECT hr.*, u.full_name AS vet_name
+      `SELECT hr.*, u.full_name AS vet_name,
+              vs.vaccine_name AS vaccination_schedule_name
        FROM health_records hr
        JOIN users u ON hr.vet_id = u.id
+       LEFT JOIN vaccination_schedules vs ON hr.vaccination_schedule_id = vs.id
        WHERE hr.animal_id = :id
        ORDER BY hr.record_date DESC`,
       { replacements: { id } }
