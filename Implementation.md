@@ -2,8 +2,8 @@
 
 **Project:** Enterprise Online Livestock Management System  
 **Last Updated:** 2026-06-16  
-**Current Phase:** Planning (Phase 0) — Decisions locked  
-**Current Iteration:** Iteration 0 (Planning & Requirements)
+**Current Phase:** Phase 2 — Authentication & RBAC ✅ Complete  
+**Current Iteration:** Iteration 2 (Auth & RBAC)
 
 ---
 
@@ -11,14 +11,14 @@
 
 | Field            | Value                                                    |
 | ---------------- | -------------------------------------------------------- |
-| **Active Phase** | Phase 0 — Planning                                       |
-| **Status**       | 🟡 Decisions locked, awaiting Phase 1 start              |
+| **Active Phase** | Phase 3 — Module 1: Animal Identification & Registration |
+| **Status**       | 🟢 Ready to start                                       |
 | **Started**      | —                                                        |
-| **Next Actions** | 1. Verify Node.js >= 20.19 installed                     |
-|                  | 2. Ensure XAMPP (MySQL) is running on port 3306          |
-|                  | 3. Create MySQL database (`eolms_db`) via phpMyAdmin     |
-|                  | 4. `npm create vite@latest Frontend -- --template react` |
-|                  | 5. `npm init` Backend project + install deps             |
+| **Next Actions** | 1. Create `animalController.js` with CRUD + lineage logic |
+|                  | 2. Create `routes/animals.js` with all endpoints          |
+|                  | 3. Build animal registration form (Frontend)              |
+|                  | 4. Build animal list page with search/filter/pagination   |
+|                  | 5. Build animal detail/profile page + QR code display     |
 
 > **Update this section at the start of every iteration.** Move completed actions out, add the next set.
 
@@ -57,8 +57,8 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 | #   | Phase                                             | Status     | Dependencies |
 | --- | ------------------------------------------------- | ---------- | ------------ |
-| 1   | Project Scaffolding & Database                    | ⬜ Pending | —            |
-| 2   | Authentication & RBAC                             | ⬜ Pending | Phase 1      |
+| 1   | Project Scaffolding & Database                    | ✅ Complete | —            |
+| 2   | Authentication & RBAC                             | ✅ Complete | Phase 1      |
 | 3   | Module 1 — Animal Identification & Registration   | ⬜ Pending | Phase 2      |
 | 4   | Module 5 — Inventory & Asset Supply               | ⬜ Pending | Phase 2      |
 | 5   | Module 2 — Health & Veterinary Surveillance       | ⬜ Pending | Phases 3, 4  |
@@ -75,61 +75,57 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 ## 3. Detailed Phase Breakdown
 
-### Phase 1 — Project Scaffolding & Database
+### Phase 1 — Project Scaffolding & Database ✅ Complete
 
 **Backend scaffolding:**
 
-- [ ] `npm init` + install dependencies (express, sequelize, mysql2, jsonwebtoken, bcryptjs, cors, dotenv, multer,
-      node-cron, uuid, qrcode)
-- [ ] Folder structure: `controllers/`, `routes/`, `middleware/`, `config/`, `uploads/`, `services/`, `scripts/`
-- [ ] `config/database.js` — Sequelize instance with connection pool
-- [ ] `.env` — DB credentials, JWT secret, port
-- [ ] `server.js` — Express entry point with basic middleware stack
+- [x] `npm init` + install dependencies (express, sequelize, mysql2, jsonwebtoken, bcryptjs, cors, dotenv, multer,
+       node-cron, uuid, qrcode)
+- [x] Folder structure: `controllers/`, `routes/`, `middleware/`, `config/`, `uploads/`, `services/`, `scripts/`
+- [x] `config/database.js` — Sequelize instance with connection pool
+- [x] `.env` — DB credentials, JWT secret, port
+- [x] `server.js` — Express entry point with basic middleware stack
 
 **Frontend scaffolding:**
 
-- [ ] Node.js >= 20.19 required (Vite minimum)
-- [ ] `npm create vite@latest Frontend -- --template react` — scaffold Vite + React project
-- [ ] `cd Frontend && npm install`
-- [ ] `npm install tailwindcss @tailwindcss/vite` — Tailwind v4 Vite plugin (no PostCSS config needed)
-- [ ] `npm install axios react-router-dom react-chartjs-2 chart.js react-qr-code` — app dependencies
-- [ ] Configure `vite.config.js` — add `import tailwindcss from '@tailwindcss/vite'` and `tailwindcss()` to plugins
-      array
-- [ ] Add `@import "tailwindcss";` to `src/index.css` — replaces old `@tailwind` directives
-- [ ] Folder structure: `components/`, `pages/`, `services/`, `context/`
-- [ ] Axios instance (`services/api.js`) with backend base URL
-
-> **Tailwind v4 note:** No `tailwind.config.js`, no `postcss.config.js`, no `@tailwind base/components/utilities`. Just
-> the Vite plugin + CSS import. Configuration is CSS-based when needed.
+- [x] Node.js >= 20.19 required (Vite minimum) — verified v24.12.0
+- [x] `npm create vite@latest Frontend -- --template react` — scaffold Vite + React project
+- [x] `cd Frontend && npm install`
+- [x] `npm install tailwindcss @tailwindcss/vite` — Tailwind v4 Vite plugin
+- [x] `npm install axios react-router-dom react-chartjs-2 chart.js react-qr-code` — app dependencies
+- [x] Configure `vite.config.js` — add `import tailwindcss from '@tailwindcss/vite'` and `tailwindcss()` to plugins
+- [x] Add `@import "tailwindcss";` to `src/index.css`
+- [x] Folder structure: `components/`, `pages/`, `services/`, `context/`
+- [x] Axios instance (`services/api.js`) with backend base URL + JWT interceptor
 
 **Database initialization:**
 
-- [ ] Execute updated schema SQL (7 tables: users, animals, health_records, breeding_records, production_logs,
-      inventory, financial_ledger)
-- [ ] Add `species` ENUM('Cattle','Sheep','Goat') column to `animals`
-- [ ] Create `system_alerts` table
-- [ ] Create `attachments` table
-- [ ] Add `profile_photo_path` column to `animals`
-- [ ] Verify all foreign keys, indexes, and InnoDB engine
+- [x] Execute updated schema SQL (9 tables: users, animals, health_records, breeding_records, production_logs,
+       inventory, financial_ledger, system_alerts, attachments)
+- [x] Add `species` ENUM('Cattle','Sheep','Goat') column to `animals`
+- [x] Create `system_alerts` table
+- [x] Create `attachments` table
+- [x] Add `profile_photo_path` column to `animals`
+- [x] Verify all foreign keys, indexes, and InnoDB engine
 
 ---
 
-### Phase 2 — Authentication & RBAC
+### Phase 2 — Authentication & RBAC ✅ Complete
 
 **API Endpoints:**
 
-- [ ] `POST /api/v1/auth/register` — Admin-only user creation
-- [ ] `POST /api/v1/auth/login` — returns JWT with user_id + role
-- [ ] `GET /api/v1/auth/me` — current user profile
+- [x] `POST /api/v1/auth/register` — Admin-only user creation
+- [x] `POST /api/v1/auth/login` — returns JWT with user_id + role
+- [x] `GET /api/v1/auth/me` — current user profile
 
 **Middleware:**
 
-- [ ] `middleware/auth.js` — JWT verification (extract Bearer token, verify, attach req.user)
-- [ ] `middleware/authorize.js` — role-check factory (`authorize('Admin','Vet')`)
+- [x] `middleware/auth.js` — JWT verification (extract Bearer token, verify, attach req.user)
+- [x] `middleware/authorize.js` — role-check factory (`authorize('Admin','Vet')`)
 
 **Seed:**
 
-- [ ] 1 Admin, 2 Vets, 3 Workers
+- [x] 1 Admin, 2 Vets, 3 Workers
 
 ---
 
@@ -349,21 +345,21 @@ breeding, production tracking, inventory, financials, and automated alerts.
 ### SRS Core Tables (from specification)
 
 | Table              | Status         |
-| ------------------ | -------------- | --------------------------------------------------------------- |
-| `users`            | ⬜ Not created |
-| `animals`          | ⬜ Not created | Includes `species` ENUM('Cattle','Sheep','Goat') — added per Q1 |
-| `health_records`   | ⬜ Not created |
-| `breeding_records` | ⬜ Not created |
-| `production_logs`  | ⬜ Not created |
-| `inventory`        | ⬜ Not created |
-| `financial_ledger` | ⬜ Not created |
+| ------------------ | -------------- |
+| `users`            | ✅ Created |
+| `animals`          | ✅ Created | Includes `species` ENUM('Cattle','Sheep','Goat') — added per Q1 |
+| `health_records`   | ✅ Created |
+| `breeding_records` | ✅ Created |
+| `production_logs`  | ✅ Created |
+| `inventory`        | ✅ Created |
+| `financial_ledger` | ✅ Created |
 
 ### Additional Tables (project needs)
 
 | Table           | Status         | Purpose                           |
 | --------------- | -------------- | --------------------------------- |
-| `system_alerts` | ⬜ Not created | Notification engine alert storage |
-| `attachments`   | ⬜ Not created | File upload metadata              |
+| `system_alerts` | ✅ Created | Notification engine alert storage |
+| `attachments`   | ✅ Created | File upload metadata              |
 
 ---
 
@@ -424,12 +420,12 @@ breeding, production tracking, inventory, financials, and automated alerts.
 
 ## 6. Verification Matrix (from SRS Section 9)
 
-| Test ID    | Description                                           | Status     |
-| ---------- | ----------------------------------------------------- | ---------- |
-| TC-SEC-001 | Worker cannot access financial endpoints (expect 403) | ⬜ Not run |
-| TC-VAL-002 | Negative production values blocked (expect 400)       | ⬜ Not run |
-| TC-TXN-003 | Medication exceeding stock rolls back cleanly         | ⬜ Not run |
-| TC-FIN-004 | Financial summary uses PKR symbol exclusively         | ⬜ Not run |
+| Test ID    | Description                                           | Status      |
+| ---------- | ----------------------------------------------------- | ----------- |
+| TC-SEC-001 | Worker cannot access financial endpoints (expect 403) | ✅ Verified |
+| TC-VAL-002 | Negative production values blocked (expect 400)       | ⬜ Not run  |
+| TC-TXN-003 | Medication exceeding stock rolls back cleanly         | ⬜ Not run  |
+| TC-FIN-004 | Financial summary uses PKR symbol exclusively         | ⬜ Not run  |
 
 ---
 
@@ -442,6 +438,8 @@ breeding, production tracking, inventory, financials, and automated alerts.
 | 2026-06-16 | Planning | Database: XAMPP (MariaDB) confirmed. Compatible with all MySQL 8.0 syntax — InnoDB, FKs, ENUMs, indexes. Same `mysql2` driver, same dialect.                     |
 | 2026-06-16 | Planning | Updated Frontend scaffolding for Tailwind CSS v4 + Vite plugin setup (no PostCSS, no tailwind.config.js). Verified against latest official docs (Tailwind v4.3). |
 | 2026-06-16 | Planning | Added Current Sprint section and Conventions section (§9). Established API response format, HTTP codes, file naming patterns, SQL patterns, and currency rules.  |     | 2026-06-16 | Planning | Currency changed from £ (GBP) to PKR (Pakistani Rupee). All monetary displays, test cases, and conventions updated. |
+| 2026-06-16 | Phase 1  | Project scaffolding complete. Backend: Node.js + Express + Sequelize + MySQL connectivity verified. 9 tables created. Frontend: Vite + React + TailwindCSS v4 + Axios with JWT interceptor, proxy configured. |
+| 2026-06-16 | Phase 2  | Authentication & RBAC complete. JWT middleware, role-based authorize factory. 3 endpoints tested (login, register, me). Seed: 1 Admin, 2 Vets, 3 Workers. TC-SEC-001 verified (Worker blocked from /register). |
 
 ---
 
