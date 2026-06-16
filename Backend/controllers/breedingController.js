@@ -184,7 +184,7 @@ const getBreedingHistory = async (req, res) => {
 const recordCalving = async (req, res) => {
   try {
     const { id } = req.params;
-    const { actual_calving_date, offspring_count, register_offspring, calving_gender, calving_breed } = req.body;
+    const { actual_calving_date, offspring_count, register_offspring, calving_genders, calving_breed } = req.body;
 
     const [records] = await sequelize.query(
       'SELECT br.*, a.species, a.breed, a.tag_number FROM breeding_records br JOIN animals a ON br.dam_id = a.id WHERE br.id = :id',
@@ -206,7 +206,7 @@ const recordCalving = async (req, res) => {
     }
 
     const validGenders = ['Male', 'Female'];
-    const offspringGender = validGenders.includes(calving_gender) ? calving_gender : 'Female';
+    const genders = Array.isArray(calving_genders) ? calving_genders : [calving_genders || 'Female'];
     const offspringBreed = calving_breed || record.breed || null;
     const offspring = parseInt(offspring_count) || 0;
 
@@ -233,6 +233,7 @@ const recordCalving = async (req, res) => {
       const offspringList = [];
 
       for (let i = 0; i < offspring; i++) {
+        const gender = validGenders.includes(genders[i]) ? genders[i] : 'Female';
         const tag = `${prefix}-${year}-${Math.floor(Math.random() * 90000) + 10000}`;
         const [result] = await sequelize.query(
           `INSERT INTO animals (tag_number, species, breed, gender, date_of_birth, dam_id, sire_identity, status, weight_kg, created_by)
@@ -242,7 +243,7 @@ const recordCalving = async (req, res) => {
               tag,
               species: record.species,
               breed: offspringBreed,
-              gender: offspringGender,
+              gender,
               dob: actual_calving_date || new Date().toISOString().split('T')[0],
               dam_id: record.dam_id,
               sire: record.sire_identity,
