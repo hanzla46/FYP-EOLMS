@@ -33,21 +33,37 @@ const uploadAnimalPhoto = async (req, res) => {
       { replacements: { photo_path: photoPath, id } }
     );
 
-    await sequelize.query(
-      `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, file_data, uploaded_by)
-       VALUES ('animal', :entity_id, :filename, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)`,
-      {
-        replacements: {
-          entity_id: id,
-          filename: photoPath,
-          original_name: req.file.originalname,
-          mime_type: req.file.mimetype,
-          file_size: req.file.size,
-          file_data: req.file.buffer || null,
-          uploaded_by: req.user.user_id,
-        },
+    const fileBuffer = req.file.buffer || null;
+
+    try {
+      await sequelize.query(
+        `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, file_data, uploaded_by)
+         VALUES ('animal', :entity_id, :filename, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)`,
+        {
+          replacements: {
+            entity_id: id,
+            filename: photoPath,
+            original_name: req.file.originalname,
+            mime_type: req.file.mimetype,
+            file_size: req.file.size,
+            file_data: fileBuffer,
+            uploaded_by: req.user.user_id,
+          },
+        }
+      );
+    } catch (insertErr) {
+      if (insertErr.original && insertErr.original.code === 'ER_BAD_FIELD_ERROR') {
+        await sequelize.query(
+          `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, uploaded_by)
+           VALUES ('animal', :entity_id, :filename, :original_name, :mime_type, :file_size, :uploaded_by)`,
+          {
+            replacements: { entity_id: id, filename: photoPath, original_name: req.file.originalname, mime_type: req.file.mimetype, file_size: req.file.size, uploaded_by: req.user.user_id },
+          }
+        );
+      } else {
+        throw insertErr;
       }
-    );
+    }
 
     res.json({ message: 'Photo uploaded.', filename: photoPath, path: `/api/v1/uploads/file/${id}?type=animal` });
   } catch (error) {
@@ -73,21 +89,37 @@ const uploadHealthDocument = async (req, res) => {
     }
 
     const filename = isVercel ? `db://${req.file.originalname}` : req.file.originalname;
-    await sequelize.query(
-      `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, file_data, uploaded_by)
-       VALUES ('health_record', :entity_id, :filename, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)`,
-      {
-        replacements: {
-          entity_id: id,
-          filename,
-          original_name: req.file.originalname,
-          mime_type: req.file.mimetype,
-          file_size: req.file.size,
-          file_data: req.file.buffer || null,
-          uploaded_by: req.user.user_id,
-        },
+    const fileBuffer = req.file.buffer || null;
+
+    try {
+      await sequelize.query(
+        `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, file_data, uploaded_by)
+         VALUES ('health_record', :entity_id, :filename, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)`,
+        {
+          replacements: {
+            entity_id: id,
+            filename,
+            original_name: req.file.originalname,
+            mime_type: req.file.mimetype,
+            file_size: req.file.size,
+            file_data: fileBuffer,
+            uploaded_by: req.user.user_id,
+          },
+        }
+      );
+    } catch (insertErr) {
+      if (insertErr.original && insertErr.original.code === 'ER_BAD_FIELD_ERROR') {
+        await sequelize.query(
+          `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, uploaded_by)
+           VALUES ('health_record', :entity_id, :filename, :original_name, :mime_type, :file_size, :uploaded_by)`,
+          {
+            replacements: { entity_id: id, filename, original_name: req.file.originalname, mime_type: req.file.mimetype, file_size: req.file.size, uploaded_by: req.user.user_id },
+          }
+        );
+      } else {
+        throw insertErr;
       }
-    );
+    }
 
     res.json({ message: 'Document uploaded.', filename, path: `/api/v1/uploads/file/${id}?type=health_record` });
   } catch (error) {
