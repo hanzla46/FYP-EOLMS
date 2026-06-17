@@ -5,7 +5,7 @@ CREATE DATABASE IF NOT EXISTS maher46_eolms CHARACTER SET utf8mb4 COLLATE utf8mb
 USE maher46_eolms;
 
 -- ============================================================
--- 1. users
+-- 1. users (no dependencies)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS users (
   id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -20,7 +20,27 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 2. animals
+-- 2. inventory (no dependencies)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS inventory (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  item_name         VARCHAR(150) NOT NULL,
+  category          ENUM('Medication','Feed','Equipment','Cleaning','Other') NOT NULL DEFAULT 'Other',
+  quantity          DECIMAL(10,2) NOT NULL DEFAULT 0,
+  unit              VARCHAR(20)  NOT NULL,
+  reorder_threshold DECIMAL(10,2) NOT NULL DEFAULT 0,
+  unit_price        DECIMAL(10,2),
+  supplier          VARCHAR(150),
+  notes             TEXT,
+  created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  INDEX idx_inv_category (category),
+  INDEX idx_inv_low_stock (quantity, reorder_threshold)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- 3. animals (depends on users, self)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS animals (
   id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,26 +74,47 @@ CREATE TABLE IF NOT EXISTS animals (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 3. health_records
+-- 4. vaccination_schedules (depends on inventory)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS vaccination_schedules (
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  vaccine_name            VARCHAR(200) NOT NULL,
+  target_species          ENUM('Cattle','Sheep','Goat','All') NOT NULL DEFAULT 'All',
+  age_days                INT,
+  booster_interval_days   INT,
+  inventory_item_id       INT,
+  notes                   TEXT,
+  created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  INDEX idx_vs_species (target_species),
+  INDEX idx_vs_inv (inventory_item_id),
+
+  CONSTRAINT fk_vs_inv
+    FOREIGN KEY (inventory_item_id) REFERENCES inventory(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- 5. health_records (depends on animals, users, vaccination_schedules)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS health_records (
-  id                   INT AUTO_INCREMENT PRIMARY KEY,
-  animal_id            INT NOT NULL,
-  vet_id               INT NOT NULL,
-  record_date          DATE NOT NULL,
-  diagnosis            VARCHAR(500),
-  treatment            TEXT,
-  medication_given     VARCHAR(200),
-  medication_quantity  DECIMAL(10,2),
-  medication_unit      VARCHAR(20),
-  inventory_item_id    INT,
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  animal_id               INT NOT NULL,
+  vet_id                  INT NOT NULL,
+  record_date             DATE NOT NULL,
+  diagnosis               VARCHAR(500),
+  treatment               TEXT,
+  medication_given        VARCHAR(200),
+  medication_quantity     DECIMAL(10,2),
+  medication_unit         VARCHAR(20),
+  inventory_item_id       INT,
   vaccination_schedule_id INT,
-  withdrawal_days      INT DEFAULT 0,
-  withdrawal_end_date  DATE,
-  notes                TEXT,
-  created_by           INT NOT NULL,
-  created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  withdrawal_days         INT DEFAULT 0,
+  withdrawal_end_date     DATE,
+  notes                   TEXT,
+  created_by              INT NOT NULL,
+  created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   INDEX idx_hr_animal (animal_id),
   INDEX idx_hr_vet (vet_id),
@@ -92,7 +133,7 @@ CREATE TABLE IF NOT EXISTS health_records (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 4. breeding_records
+-- 6. breeding_records (depends on animals, users)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS breeding_records (
   id                     INT AUTO_INCREMENT PRIMARY KEY,
@@ -121,7 +162,7 @@ CREATE TABLE IF NOT EXISTS breeding_records (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 5. production_logs
+-- 7. production_logs (depends on animals, users)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS production_logs (
   id              INT AUTO_INCREMENT PRIMARY KEY,
@@ -145,27 +186,7 @@ CREATE TABLE IF NOT EXISTS production_logs (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 6. inventory
--- ============================================================
-CREATE TABLE IF NOT EXISTS inventory (
-  id                INT AUTO_INCREMENT PRIMARY KEY,
-  item_name         VARCHAR(150) NOT NULL,
-  category          ENUM('Medication','Feed','Equipment','Cleaning','Other') NOT NULL DEFAULT 'Other',
-  quantity          DECIMAL(10,2) NOT NULL DEFAULT 0,
-  unit              VARCHAR(20)  NOT NULL,
-  reorder_threshold DECIMAL(10,2) NOT NULL DEFAULT 0,
-  unit_price        DECIMAL(10,2),
-  supplier          VARCHAR(150),
-  notes             TEXT,
-  created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-  INDEX idx_inv_category (category),
-  INDEX idx_inv_low_stock (quantity, reorder_threshold)
-) ENGINE=InnoDB;
-
--- ============================================================
--- 7. financial_ledger
+-- 8. financial_ledger (depends on users)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS financial_ledger (
   id                    INT AUTO_INCREMENT PRIMARY KEY,
@@ -189,28 +210,7 @@ CREATE TABLE IF NOT EXISTS financial_ledger (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 8. vaccination_schedules
--- ============================================================
-CREATE TABLE IF NOT EXISTS vaccination_schedules (
-  id                      INT AUTO_INCREMENT PRIMARY KEY,
-  vaccine_name            VARCHAR(200) NOT NULL,
-  target_species          ENUM('Cattle','Sheep','Goat','All') NOT NULL DEFAULT 'All',
-  age_days                INT,
-  booster_interval_days   INT,
-  inventory_item_id       INT,
-  notes                   TEXT,
-  created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-  INDEX idx_vs_species (target_species),
-  INDEX idx_vs_inv (inventory_item_id),
-
-  CONSTRAINT fk_vs_inv
-    FOREIGN KEY (inventory_item_id) REFERENCES inventory(id) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
--- ============================================================
--- 9. system_alerts
+-- 9. system_alerts (no dependencies)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS system_alerts (
   id                    INT AUTO_INCREMENT PRIMARY KEY,
@@ -229,7 +229,7 @@ CREATE TABLE IF NOT EXISTS system_alerts (
 ) ENGINE=InnoDB;
 
 -- ============================================================
--- 10. attachments
+-- 10. attachments (depends on users)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS attachments (
   id            INT AUTO_INCREMENT PRIMARY KEY,
