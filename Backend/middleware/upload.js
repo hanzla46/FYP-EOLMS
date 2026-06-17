@@ -2,7 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
-const storage = multer.diskStorage({
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
@@ -21,10 +21,12 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const limits = { fileSize: 10 * 1024 * 1024 };
+
 const upload = multer({
-  storage,
+  storage: process.env.VERCEL ? multer.memoryStorage() : diskStorage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits,
 });
 
 module.exports = upload;

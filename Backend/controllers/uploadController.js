@@ -2,6 +2,8 @@ const { sequelize } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
 
+const isVercel = process.env.VERCEL === '1';
+
 const uploadAnimalPhoto = async (req, res) => {
   try {
     const { id } = req.params;
@@ -13,41 +15,44 @@ const uploadAnimalPhoto = async (req, res) => {
     const [animals] = await sequelize.query('SELECT * FROM animals WHERE id = :id', { replacements: { id } });
 
     if (animals.length === 0) {
-      fs.unlinkSync(req.file.path);
+      if (!isVercel && req.file.path) fs.unlinkSync(req.file.path);
       return res.status(404).json({ error: 'Animal not found.' });
     }
 
     const animal = animals[0];
+    const filename = req.file.originalname;
 
-    if (animal.profile_photo_path) {
+    if (!isVercel && animal.profile_photo_path) {
       const oldPath = path.join('uploads', animal.profile_photo_path);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
 
+    const photoPath = isVercel ? `db://${filename}` : req.file.filename;
     await sequelize.query(
       'UPDATE animals SET profile_photo_path = :photo_path WHERE id = :id',
-      { replacements: { photo_path: req.file.filename, id } }
+      { replacements: { photo_path: photoPath, id } }
     );
 
     await sequelize.query(
-      `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, uploaded_by)
-       VALUES ('animal', :entity_id, :filename, :original_name, :mime_type, :file_size, :uploaded_by)`,
+      `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, file_data, uploaded_by)
+       VALUES ('animal', :entity_id, :filename, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)`,
       {
         replacements: {
           entity_id: id,
-          filename: req.file.filename,
+          filename: photoPath,
           original_name: req.file.originalname,
           mime_type: req.file.mimetype,
           file_size: req.file.size,
+          file_data: req.file.buffer || null,
           uploaded_by: req.user.user_id,
         },
       }
     );
 
-    res.json({ message: 'Photo uploaded.', filename: req.file.filename, path: `/uploads/${req.file.filename}` });
+    res.json({ message: 'Photo uploaded.', filename: photoPath, path: `/api/v1/uploads/file/${id}?type=animal` });
   } catch (error) {
     console.error('Upload animal photo error:', error);
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    if (!isVercel && req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
@@ -63,35 +68,59 @@ const uploadHealthDocument = async (req, res) => {
     const [records] = await sequelize.query('SELECT * FROM health_records WHERE id = :id', { replacements: { id } });
 
     if (records.length === 0) {
-      fs.unlinkSync(req.file.path);
+      if (!isVercel && req.file.path) fs.unlinkSync(req.file.path);
       return res.status(404).json({ error: 'Health record not found.' });
     }
 
+    const filename = isVercel ? `db://${req.file.originalname}` : req.file.originalname;
     await sequelize.query(
-      `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, uploaded_by)
-       VALUES ('health_record', :entity_id, :filename, :original_name, :mime_type, :file_size, :uploaded_by)`,
+      `INSERT INTO attachments (entity_type, entity_id, filename, original_name, mime_type, file_size, file_data, uploaded_by)
+       VALUES ('health_record', :entity_id, :filename, :original_name, :mime_type, :file_size, :file_data, :uploaded_by)`,
       {
         replacements: {
           entity_id: id,
-          filename: req.file.filename,
+          filename,
           original_name: req.file.originalname,
           mime_type: req.file.mimetype,
           file_size: req.file.size,
+          file_data: req.file.buffer || null,
           uploaded_by: req.user.user_id,
         },
       }
     );
 
-    res.json({ message: 'Document uploaded.', filename: req.file.filename, path: `/uploads/${req.file.filename}` });
+    res.json({ message: 'Document uploaded.', filename, path: `/api/v1/uploads/file/${id}?type=health_record` });
   } catch (error) {
     console.error('Upload health document error:', error);
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    if (!isVercel && req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
 
 const serveFile = async (req, res) => {
   try {
+    const { entity_type, entity_id } = req.query;
+
+    if (isVercel || entity_type) {
+      const where = entity_type && entity_id
+        ? 'WHERE entity_type = :type AND entity_id = :eid'
+        : 'WHERE filename = :fname';
+      const replacements = entity_type && entity_id
+        ? { type: entity_type, eid: entity_id }
+        : { fname: req.params.filename };
+
+      const [attachments] = await sequelize.query(
+        `SELECT * FROM attachments ${where} ORDER BY created_at DESC LIMIT 1`,
+        { replacements }
+      );
+
+      if (attachments.length > 0 && attachments[0].file_data) {
+        res.set('Content-Type', attachments[0].mime_type || 'application/octet-stream');
+        res.set('Content-Disposition', `inline; filename="${attachments[0].original_name}"`);
+        return res.send(attachments[0].file_data);
+      }
+    }
+
     const { filename } = req.params;
     const filePath = path.join(__dirname, '..', 'uploads', path.basename(filename));
 

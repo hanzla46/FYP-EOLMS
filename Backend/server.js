@@ -14,6 +14,7 @@ const productionLogRoutes = require('./routes/productionLogs');
 const financeRoutes = require('./routes/finance');
 const alertRoutes = require('./routes/alerts');
 const uploadRoutes = require('./routes/uploads');
+const cronRoutes = require('./routes/cron');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api/v1/production-logs', productionLogRoutes);
 app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/alerts', alertRoutes);
 app.use('/api/v1/uploads', uploadRoutes);
+app.use('/api/v1/cron', cronRoutes);
 
 let initialized = false;
 

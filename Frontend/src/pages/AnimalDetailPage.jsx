@@ -189,7 +189,7 @@ export default function AnimalDetailPage() {
         <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
           {animal.profile_photo_path ? (
             <div className="mb-4">
-              <img src={uploadService.getFileUrl(animal.profile_photo_path)} alt={animal.tag_number}
+              <img src={uploadService.getFileUrl(animal.profile_photo_path, 'animal', animal.id)} alt={animal.tag_number}
                 className="w-48 h-48 object-cover rounded-lg border" />
             </div>
           ) : (

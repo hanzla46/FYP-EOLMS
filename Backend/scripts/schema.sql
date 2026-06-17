@@ -239,6 +239,7 @@ CREATE TABLE IF NOT EXISTS attachments (
   original_name VARCHAR(255) NOT NULL,
   mime_type     VARCHAR(100),
   file_size     INT,
+  file_data     LONGBLOB,
   uploaded_by   INT,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

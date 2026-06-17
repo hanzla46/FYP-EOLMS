@@ -15,7 +15,12 @@ const uploadService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  getFileUrl: (filename) => `/api/v1/uploads/${filename}`,
+  getFileUrl: (filename, entityType, entityId) => {
+    if (entityType && entityId) {
+      return `/api/v1/uploads/${filename}?entity_type=${entityType}&entity_id=${entityId}`;
+    }
+    return `/api/v1/uploads/${filename}`;
+  },
 };
 
 export default uploadService;
