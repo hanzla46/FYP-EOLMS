@@ -1,8 +1,8 @@
 -- EOLMS Database Schema
 -- MySQL 8.0 / MariaDB (InnoDB)
 
-CREATE DATABASE IF NOT EXISTS maher46_eolms_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE maher46_eolms_db;
+CREATE DATABASE IF NOT EXISTS maher46_eolms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE maher46_eolms;
 
 -- ============================================================
 -- 1. users

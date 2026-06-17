@@ -42,9 +42,28 @@ app.use('/api/v1/uploads', uploadRoutes);
 const start = async () => {
   await testConnection();
 
-  const [[{ count }]] = await sequelize.query('SELECT COUNT(*) AS count FROM users');
-  if (count === 0) {
-    console.log('[Seed] Database is empty — auto-seeding...');
+  let needsSeed = false;
+  try {
+    const [[{ count }]] = await sequelize.query('SELECT COUNT(*) AS count FROM users');
+    if (count === 0) needsSeed = true;
+  } catch (err) {
+    if (err.original && err.original.code === 'ER_NO_SUCH_TABLE') {
+      console.log('[Setup] Tables not found — creating schema...');
+      const fs = require('fs');
+      const schema = fs.readFileSync(require('path').join(__dirname, 'scripts', 'schema.sql'), 'utf8');
+      const statements = schema.split(';').map(s => s.trim()).filter(s => s.length > 0 && !s.startsWith('--'));
+      for (const stmt of statements) {
+        try { await sequelize.query(stmt); } catch (e) { /* ignore duplicates */ }
+      }
+      console.log('[Setup] Schema created.');
+      needsSeed = true;
+    } else {
+      throw err;
+    }
+  }
+
+  if (needsSeed) {
+    console.log('[Seed] Auto-seeding demo data...');
     await seed(true);
     console.log('[Seed] Done.');
   }
