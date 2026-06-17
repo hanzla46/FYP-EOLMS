@@ -21,10 +21,19 @@ const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = (arr) => arr[random(0, arr.length - 1)];
 const dateStr = (date) => date.toISOString().split('T')[0];
 
-const seed = async () => {
+const seed = async (calledFromSetup = false) => {
   try {
     await sequelize.authenticate();
     console.log('Connected to database.\n');
+
+    const force = process.argv.includes('--force') || process.argv.includes('-f');
+    const [[{ count }]] = await sequelize.query('SELECT COUNT(*) AS count FROM users');
+
+    if (count > 0 && !force) {
+      console.log('Database already has data. Use --force to re-seed (WARNING: destroys all data).');
+      if (!calledFromSetup) process.exit(0);
+      return;
+    }
 
     console.log('Clearing existing data...');
     await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
@@ -298,11 +307,15 @@ const seed = async () => {
     console.log('  Vet:     sarah@eolms.local / vet123');
     console.log('  Worker:  ali@eolms.local / worker123');
 
+    if (calledFromSetup) return;
     process.exit(0);
   } catch (error) {
     console.error('Seed error:', error);
+    if (calledFromSetup) throw error;
     process.exit(1);
   }
 };
 
-seed();
+module.exports = seed;
+
+if (require.main === module) seed();
