@@ -1,5 +1,7 @@
 import api from './api';
 
+const BASE = 'https://eolms-backend.vercel.app/api/v1';
+
 const uploadService = {
   uploadAnimalPhoto: (animalId, file) => {
     const formData = new FormData();
@@ -16,10 +18,8 @@ const uploadService = {
     });
   },
   getFileUrl: (filename, entityType, entityId) => {
-    if (entityType && entityId) {
-      return `/api/v1/uploads/${filename}?entity_type=${entityType}&entity_id=${entityId}`;
-    }
-    return `/api/v1/uploads/${filename}`;
+    const params = entityType && entityId ? `?entity_type=${entityType}&entity_id=${entityId}` : '';
+    return `${BASE}/uploads/${filename}${params}`;
   },
 };
 
