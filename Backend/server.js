@@ -14,10 +14,8 @@ const productionLogRoutes = require('./routes/productionLogs');
 const financeRoutes = require('./routes/finance');
 const alertRoutes = require('./routes/alerts');
 const uploadRoutes = require('./routes/uploads');
-const { startCron } = require('./services/notificationCron');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -39,7 +37,12 @@ app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/alerts', alertRoutes);
 app.use('/api/v1/uploads', uploadRoutes);
 
-const start = async () => {
+let initialized = false;
+
+const init = async () => {
+  if (initialized) return;
+  initialized = true;
+
   await testConnection();
 
   let needsSeed = false;
@@ -58,7 +61,8 @@ const start = async () => {
       console.log('[Setup] Schema created.');
       needsSeed = true;
     } else {
-      throw err;
+      console.error('[Setup] DB error:', err.message);
+      return;
     }
   }
 
@@ -67,11 +71,22 @@ const start = async () => {
     await seed(true);
     console.log('[Seed] Done.');
   }
-
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    startCron();
-  });
 };
 
-start();
+app.use(async (req, res, next) => {
+  await init();
+  next();
+});
+
+module.exports = app;
+
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  const { startCron } = require('./services/notificationCron');
+  init().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      startCron();
+    });
+  });
+}
