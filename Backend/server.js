@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { testConnection } = require('./config/database');
+const { testConnection, sequelize } = require('./config/database');
+const seed = require('./scripts/seed');
 const authRoutes = require('./routes/auth');
 const animalRoutes = require('./routes/animals');
 const inventoryRoutes = require('./routes/inventory');
@@ -40,6 +41,13 @@ app.use('/api/v1/uploads', uploadRoutes);
 
 const start = async () => {
   await testConnection();
+
+  const [[{ count }]] = await sequelize.query('SELECT COUNT(*) AS count FROM users');
+  if (count === 0) {
+    console.log('[Seed] Database is empty — auto-seeding...');
+    await seed(true);
+    console.log('[Seed] Done.');
+  }
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
