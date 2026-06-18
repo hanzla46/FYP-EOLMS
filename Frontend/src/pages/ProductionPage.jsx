@@ -14,11 +14,12 @@ export default function ProductionPage() {
   const [filters, setFilters] = useState({ date_from: '', date_to: '' })
   const navigate = useNavigate()
 
-  const fetchData = async () => {
+  const fetchData = async (filtersOverride) => {
+    const f = filtersOverride || filters
     try {
       const params = { limit: 50 }
-      if (filters.date_from) params.date_from = filters.date_from
-      if (filters.date_to) params.date_to = filters.date_to
+      if (f.date_from) params.date_from = f.date_from
+      if (f.date_to) params.date_to = f.date_to
       const [logRes, dashRes] = await Promise.all([
         productionService.list(params),
         productionService.dashboard(),
@@ -29,7 +30,12 @@ export default function ProductionPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchData() }, [filters])
+  useEffect(() => { fetchData() }, [])
+
+  const handleFilter = () => {
+    setLoading(true)
+    fetchData()
+  }
 
   const chartData = () => {
     if (!dashboard) return null
@@ -98,9 +104,9 @@ export default function ProductionPage() {
           <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
             className="px-3 py-2 border rounded-lg text-sm" />
         </div>
-        <button onClick={() => fetchData()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium self-end">Filter</button>
+        <button onClick={() => fetchData(filters)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium self-end">Filter</button>
         {(filters.date_from || filters.date_to) && (
-          <button onClick={() => { setFilters({ date_from: '', date_to: '' }) }}
+          <button onClick={() => { const cleared = { date_from: '', date_to: '' }; setFilters(cleared); fetchData(cleared) }}
             className="px-3 py-2 text-sm text-gray-500 hover:underline self-end">Clear</button>
         )}
       </div>
