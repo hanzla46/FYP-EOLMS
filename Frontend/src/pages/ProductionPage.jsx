@@ -11,12 +11,16 @@ export default function ProductionPage() {
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
+  const [filters, setFilters] = useState({ date_from: '', date_to: '' })
   const navigate = useNavigate()
 
   const fetchData = async () => {
     try {
+      const params = { limit: 50 }
+      if (filters.date_from) params.date_from = filters.date_from
+      if (filters.date_to) params.date_to = filters.date_to
       const [logRes, dashRes] = await Promise.all([
-        productionService.list({ limit: 50 }),
+        productionService.list(params),
         productionService.dashboard(),
       ])
       setLogs(logRes.data.data)
@@ -25,7 +29,7 @@ export default function ProductionPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [filters])
 
   const chartData = () => {
     if (!dashboard) return null
@@ -74,13 +78,31 @@ export default function ProductionPage() {
         </button>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-white rounded-lg shadow p-1 w-fit">
+      <div className="flex gap-1 mb-4 bg-white rounded-lg shadow p-1 w-fit">
         {['dashboard', 'logs'].map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 rounded text-sm font-medium capitalize ${tab === t ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
             {t}
           </button>
         ))}
+      </div>
+
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+          <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+            className="px-3 py-2 border rounded-lg text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+          <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+            className="px-3 py-2 border rounded-lg text-sm" />
+        </div>
+        <button onClick={() => fetchData()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium self-end">Filter</button>
+        {(filters.date_from || filters.date_to) && (
+          <button onClick={() => { setFilters({ date_from: '', date_to: '' }) }}
+            className="px-3 py-2 text-sm text-gray-500 hover:underline self-end">Clear</button>
+        )}
       </div>
 
       {tab === 'dashboard' && dashboard && (

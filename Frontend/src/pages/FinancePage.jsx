@@ -17,9 +17,12 @@ export default function FinancePage() {
   const fetchData = async () => {
     setError('')
     try {
+      const params = { limit: 50 }
+      if (filters.date_from) params.date_from = filters.date_from
+      if (filters.date_to) params.date_to = filters.date_to
       const [txnRes, sumRes] = await Promise.all([
-        financeService.list({ limit: 50 }),
-        financeService.summary(filters.date_from ? filters : {}),
+        financeService.list(params),
+        financeService.summary(params),
       ])
       setTransactions(txnRes.data.data)
       setSummary(sumRes.data.data)
@@ -28,7 +31,7 @@ export default function FinancePage() {
     } finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchData() }, [filters])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -73,6 +76,24 @@ export default function FinancePage() {
       </div>
 
       {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
+
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
+          <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+            className="px-3 py-2 border rounded-lg text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+          <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+            className="px-3 py-2 border rounded-lg text-sm" />
+        </div>
+        <button onClick={() => fetchData()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium self-end">Filter</button>
+        {(filters.date_from || filters.date_to) && (
+          <button onClick={() => { setFilters({ date_from: '', date_to: '' }) }}
+            className="px-3 py-2 text-sm text-gray-500 hover:underline self-end">Clear</button>
+        )}
+      </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 mb-6 space-y-3">
