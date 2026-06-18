@@ -1,111 +1,184 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus, AlertTriangle, Package } from 'lucide-react'
+import { toast } from 'sonner'
 import inventoryService from '../services/inventoryService'
+import { Button } from '../components/ui/Button'
+import { Badge } from '../components/ui/Badge'
+import { FilterBar } from '../components/ui/FilterBar'
+import { EmptyState } from '../components/ui/EmptyState'
+import { CardSkeleton } from '../components/ui/Skeleton'
+import { Drawer } from '../components/ui/Drawer'
+import { Input, Textarea } from '../components/ui/Input'
+import SearchableSelect from '../components/SearchableSelect'
+
+const categoryOptions = [
+  {id:'Medication',label:'Medication'},{id:'Feed',label:'Feed'},
+  {id:'Equipment',label:'Equipment'},{id:'Cleaning',label:'Cleaning'},{id:'Other',label:'Other'},
+]
 
 export default function InventoryPage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('')
   const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState({ category: '' })
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState({
+    item_name: '', category: 'Medication', quantity: '0', unit: '',
+    reorder_threshold: '0', unit_price: '', supplier: '', notes: ''
+  })
+  const [saving, setSaving] = useState(false)
 
   const fetchItems = async () => {
     setLoading(true)
     try {
       const params = {}
-      if (filter) params.category = filter
+      if (filters.category) params.category = filters.category
       if (search) params.search = search
       const res = await inventoryService.list(params)
       setItems(res.data.data)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { console.error(err) }
+    finally { setLoading(false) }
   }
 
-  useEffect(() => { fetchItems() }, [filter])
+  useEffect(() => { fetchItems() }, [search, filters])
 
-  const handleSearchSubmit = (e) => {
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    fetchItems()
+    if (!form.item_name || !form.unit) {
+      toast.error('Item name and unit are required.')
+      return
+    }
+    setSaving(true)
+    try {
+      const payload = {
+        ...form,
+        quantity: parseFloat(form.quantity) || 0,
+        reorder_threshold: parseFloat(form.reorder_threshold) || 0,
+        unit_price: form.unit_price ? parseFloat(form.unit_price) : null,
+      }
+      await inventoryService.addItem(payload)
+      toast.success('Item added')
+      setForm({ item_name: '', category: 'Medication', quantity: '0', unit: '', reorder_threshold: '0', unit_price: '', supplier: '', notes: '' })
+      setDrawerOpen(false)
+      fetchItems()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to add item.')
+    } finally { setSaving(false) }
   }
 
   const isLowStock = (item) => item.reorder_threshold > 0 && parseFloat(item.quantity) <= parseFloat(item.reorder_threshold)
 
-  const categoryBg = {
-    Medication: 'bg-blue-100 text-blue-800',
-    Feed: 'bg-green-100 text-green-800',
-    Equipment: 'bg-purple-100 text-purple-800',
-    Cleaning: 'bg-yellow-100 text-yellow-800',
-    Other: 'bg-gray-100 text-gray-800',
+  const categoryVariant = (cat) => {
+    const map = { Medication: 'pending', Feed: 'success', Equipment: 'critical', Cleaning: 'neutral', Other: 'neutral' }
+    return map[cat] || 'neutral'
+  }
+
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Inventory</h1>
+          <Button size="sm"><Plus className="w-4 h-4" /> Add Item</Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Inventory</h1>
-        <Link to="/inventory/add" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-          + Add Item
-        </Link>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Inventory</h1>
+        <Button size="sm" onClick={() => setDrawerOpen(true)}><Plus className="w-4 h-4" /> Add Item</Button>
       </div>
 
-      <form onSubmit={handleSearchSubmit} className="flex gap-3 mb-6">
-        <input value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search item or supplier..." className="px-3 py-2 border rounded-lg text-sm flex-1" />
-        <select value={filter} onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-2 border rounded-lg text-sm">
-          <option value="">All Categories</option>
-          <option value="Medication">Medication</option>
-          <option value="Feed">Feed</option>
-          <option value="Equipment">Equipment</option>
-          <option value="Cleaning">Cleaning</option>
-          <option value="Other">Other</option>
-        </select>
-        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-          Filter
-        </button>
-      </form>
+      <FilterBar
+        onSearch={setSearch}
+        onFilter={setFilters}
+        className="mb-4"
+        filters={[
+          { key: 'category', label: 'Category', options: [
+            { value: 'Medication', label: 'Medication' },
+            { value: 'Feed', label: 'Feed' },
+            { value: 'Equipment', label: 'Equipment' },
+            { value: 'Cleaning', label: 'Cleaning' },
+            { value: 'Other', label: 'Other' },
+          ]},
+        ]}
+      />
 
-      {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
+      {items.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="No inventory items"
+          description="Add your first item to start tracking stock."
+          action={<Button size="sm" onClick={() => setDrawerOpen(true)}><Plus className="w-4 h-4" /> Add Item</Button>}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((item) => (
-            <Link key={item.id} to={`/inventory/${item.id}`}
-              className={`bg-white rounded-xl shadow p-5 hover:shadow-md transition border ${isLowStock(item) ? 'border-red-300' : 'border-transparent'}`}>
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-gray-800">{item.item_name}</h3>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categoryBg[item.category] || categoryBg.Other}`}>
-                  {item.category}
-                </span>
-              </div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <span className={`text-2xl font-bold ${isLowStock(item) ? 'text-red-600' : 'text-gray-800'}`}>
-                    {item.quantity}
-                  </span>
-                  <span className="text-sm text-gray-500 ml-1">{item.unit}</span>
+          {items.map((item) => {
+            const low = isLowStock(item)
+            return (
+              <Link
+                key={item.id}
+                to={`/inventory/${item.id}`}
+                className={`bg-white dark:bg-[#16201A] rounded-md border p-4 hover:border-pasture-400/40 dark:hover:border-pasture-400/40 transition-colors ${low ? 'border-clay-400/40 dark:border-clay-400/30' : 'border-slate2-400/20 dark:border-slate2-600/20'}`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-medium text-ink-900 dark:text-ink-100 truncate">{item.item_name}</h3>
+                  <Badge variant={categoryVariant(item.category)}>{item.category}</Badge>
                 </div>
-                {item.unit_price && (
-                  <span className="text-sm text-gray-500">PKR {parseFloat(item.unit_price).toLocaleString()}/ea</span>
+                <div className="flex items-end justify-between">
+                  <div>
+                    <span className={`text-2xl font-semibold ledger-mono ${low ? 'text-clay-600 dark:text-clay-400' : 'text-ink-900 dark:text-ink-100'}`}>
+                      {item.quantity}
+                    </span>
+                    <span className="text-sm text-slate2-400 ml-1">{item.unit}</span>
+                  </div>
+                  {item.unit_price && (
+                    <span className="text-sm text-slate2-400">PKR {parseFloat(item.unit_price).toLocaleString()}/ea</span>
+                  )}
+                </div>
+                {low && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-clay-600 dark:text-clay-400">
+                    <AlertTriangle className="w-3 h-3" />
+                    Low stock (threshold: {item.reorder_threshold})
+                  </div>
                 )}
-              </div>
-              {isLowStock(item) && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-red-600">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Low stock (threshold: {item.reorder_threshold})
-                </div>
-              )}
-              {item.supplier && <p className="text-xs text-gray-400 mt-2">{item.supplier}</p>}
-            </Link>
-          ))}
-          {items.length === 0 && (
-            <div className="col-span-full text-center py-12 text-gray-500">No inventory items found.</div>
-          )}
+                {item.supplier && <p className="text-xs text-slate2-400 mt-2">{item.supplier}</p>}
+              </Link>
+            )
+          })}
         </div>
       )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Add Inventory Item">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Item Name *" name="item_name" value={form.item_name} onChange={handleChange} placeholder="e.g. Ivermectin 1%" required />
+            <SearchableSelect label="Category" value={form.category} onChange={(v) => setForm({...form, category: v})} options={categoryOptions} />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <Input label="Quantity" type="number" name="quantity" value={form.quantity} onChange={handleChange} step="0.01" min="0" />
+            <Input label="Unit *" name="unit" value={form.unit} onChange={handleChange} placeholder="e.g. ml, kg, pcs" required />
+            <Input label="Reorder Threshold" type="number" name="reorder_threshold" value={form.reorder_threshold} onChange={handleChange} step="0.01" min="0" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Unit Price (PKR)" type="number" name="unit_price" value={form.unit_price} onChange={handleChange} step="0.01" min="0" placeholder="e.g. 250.00" />
+            <Input label="Supplier" name="supplier" value={form.supplier} onChange={handleChange} placeholder="Supplier name" />
+          </div>
+          <Textarea label="Notes" name="notes" value={form.notes} onChange={handleChange} rows={2} />
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" disabled={saving}>{saving ? 'Adding...' : 'Add Item'}</Button>
+            <Button type="button" variant="ghost" onClick={() => setDrawerOpen(false)}>Cancel</Button>
+          </div>
+        </form>
+      </Drawer>
     </div>
   )
 }

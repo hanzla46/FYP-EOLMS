@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react'
+import { Bell, Check } from 'lucide-react'
 import alertService from '../services/alertService'
+import { StatusPill } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
+import { EmptyState } from '../components/ui/EmptyState'
+import SearchableSelect from '../components/SearchableSelect'
+
+const severityIcons = {
+  Critical: <Bell className="w-4 h-4 text-clay-400" />,
+  Warning: <Bell className="w-4 h-4 text-wheat-400" />,
+  Info: <Bell className="w-4 h-4 text-slate2-400" />,
+}
+
+const severityBorder = {
+  Critical: 'border-l-clay-400 dark:border-l-clay-400',
+  Warning: 'border-l-wheat-400 dark:border-l-wheat-400',
+  Info: 'border-l-pasture-400 dark:border-l-pasture-400',
+}
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState([])
@@ -7,6 +24,7 @@ export default function AlertsPage() {
   const [filter, setFilter] = useState('')
 
   const fetchAlerts = async () => {
+    setLoading(true)
     try {
       const params = {}
       if (filter === 'unread') params.is_read = 'false'
@@ -23,49 +41,63 @@ export default function AlertsPage() {
     fetchAlerts()
   }
 
-  const severityBadge = (s) => {
-    const colors = {
-      Info: 'bg-blue-100 text-blue-800',
-      Warning: 'bg-yellow-100 text-yellow-800',
-      Critical: 'bg-red-100 text-red-800',
-    }
-    return `px-2 py-0.5 rounded-full text-xs font-medium ${colors[s] || 'bg-gray-100 text-gray-800'}`
+  if (loading) {
+    return (
+      <div>
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100 mb-4">Notifications</h1>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="p-4 rounded-md bg-white dark:bg-[#16201A] border border-slate2-400/20 dark:border-slate2-600/20 animate-pulse">
+              <div className="h-4 w-1/4 bg-slate2-400/20 dark:bg-slate2-600/20 rounded mb-2" />
+              <div className="h-3 w-3/4 bg-slate2-400/20 dark:bg-slate2-600/20 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
-        <select value={filter} onChange={(e) => setFilter(e.target.value)}
-          className="px-3 py-1.5 border rounded-lg text-sm">
-          <option value="">All</option>
-          <option value="unread">Unread</option>
-        </select>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Notifications</h1>
+        <SearchableSelect
+          value={filter}
+          onChange={setFilter}
+          options={[{id:'',label:'All'},{id:'unread',label:'Unread'}]}
+          className="w-36"
+        />
       </div>
 
-      {loading ? <div className="text-center py-12 text-gray-500">Loading...</div> : (
-        <div className="space-y-3">
+      {alerts.length === 0 ? (
+        <EmptyState
+          icon={Bell}
+          title="No notifications"
+          description="You're all caught up. Notifications will appear here when there are updates."
+        />
+      ) : (
+        <div className="space-y-2">
           {alerts.map((a) => (
-            <div key={a.id} className={`bg-white rounded-xl shadow p-4 border-l-4 ${a.is_read ? 'border-transparent' : 'border-blue-500'}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={severityBadge(a.severity)}>{a.severity}</span>
-                    <span className="text-xs text-gray-400">{a.alert_type}</span>
-                    <span className="text-xs text-gray-400">{new Date(a.created_at).toLocaleString()}</span>
-                  </div>
-                  <p className="text-sm text-gray-700">{a.message}</p>
+            <div
+              key={a.id}
+              className={`bg-white dark:bg-[#16201A] rounded-md border border-slate2-400/20 dark:border-slate2-600/20 p-4 border-l-4 ${a.is_read ? 'border-l-transparent' : severityBorder[a.severity] || 'border-l-pasture-400'}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2 mb-1">
+                  {severityIcons[a.severity] || severityIcons.Info}
+                  <StatusPill status={a.severity} />
+                  <span className="text-xs text-slate2-400">{a.alert_type}</span>
+                  <span className="text-xs text-slate2-400">{new Date(a.created_at).toLocaleString()}</span>
                 </div>
                 {!a.is_read && (
-                  <button onClick={() => markRead(a.id)}
-                    className="ml-3 text-xs text-blue-600 hover:underline whitespace-nowrap">
-                    Mark read
-                  </button>
+                  <Button variant="ghost" size="sm" onClick={() => markRead(a.id)} className="shrink-0">
+                    <Check className="w-3 h-3" /> Mark read
+                  </Button>
                 )}
               </div>
+              <p className="text-sm text-ink-900 dark:text-ink-100 mt-1">{a.message}</p>
             </div>
           ))}
-          {alerts.length === 0 && <div className="text-center py-12 text-gray-500">No notifications.</div>}
         </div>
       )}
     </div>

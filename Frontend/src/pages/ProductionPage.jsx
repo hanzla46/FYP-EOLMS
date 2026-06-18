@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Line, Bar } from 'react-chartjs-2'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js'
+import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import productionService from '../services/productionService'
+import animalService from '../services/animalService'
+import { Button } from '../components/ui/Button'
+import { StatCard } from '../components/ui/StatCard'
+import { ChartWrapper } from '../components/ui/ChartWrapper'
+import { Tabs } from '../components/ui/Tabs'
+import { DataTable } from '../components/ui/DataTable'
+import { TagBadge } from '../components/ui/TagBadge'
+import { Card, CardContent } from '../components/ui/Card'
+import { CardSkeleton } from '../components/ui/Skeleton'
+import { Input, Textarea } from '../components/ui/Input'
+import { DatePicker } from '../components/ui/DatePicker'
+import { Drawer } from '../components/ui/Drawer'
+import SearchableSelect from '../components/SearchableSelect'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
+const typeOptions = [{id:'Milk',label:'Milk'},{id:'Weight',label:'Weight'},{id:'Wool',label:'Wool'}]
 
 export default function ProductionPage() {
   const [logs, setLogs] = useState([])
@@ -12,9 +24,13 @@ export default function ProductionPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
   const [filters, setFilters] = useState({ date_from: '', date_to: '' })
-  const navigate = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [animals, setAnimals] = useState([])
+  const [form, setForm] = useState({ animal_id: null, log_date: new Date().toISOString().split('T')[0], production_type: 'Milk', quantity: '', unit: 'L', notes: '' })
+  const [saving, setSaving] = useState(false)
 
   const fetchData = async (filtersOverride) => {
+    setLoading(true)
     const f = filtersOverride || filters
     try {
       const params = { limit: 50 }
@@ -32,9 +48,27 @@ export default function ProductionPage() {
 
   useEffect(() => { fetchData() }, [])
 
-  const handleFilter = () => {
-    setLoading(true)
-    fetchData()
+  const openDrawer = () => {
+    animalService.list({ limit: 200, status: 'Active' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} \u00B7 ${a.breed || ''} \u00B7 ${a.gender}` }))))
+    setForm({ animal_id: null, log_date: new Date().toISOString().split('T')[0], production_type: 'Milk', quantity: '', unit: 'L', notes: '' })
+    setDrawerOpen(true)
+  }
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.animal_id || !form.quantity) { toast.error('Animal and quantity are required.'); return }
+    if (parseFloat(form.quantity) < 0) { toast.error('Quantity cannot be negative.'); return }
+    setSaving(true)
+    try {
+      await productionService.log({ ...form, quantity: parseFloat(form.quantity) })
+      toast.success('Production logged')
+      setDrawerOpen(false)
+      fetchData()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to log production.')
+    } finally { setSaving(false) }
   }
 
   const chartData = () => {
@@ -44,17 +78,12 @@ export default function ProductionPage() {
       if (!byType[d.production_type]) byType[d.production_type] = {}
       byType[d.production_type][d.log_date?.split('T')[0]] = parseFloat(d.daily_total)
     })
-
     const allDates = [...new Set(dashboard.by_date.map(d => d.log_date?.split('T')[0]))].sort()
-    const colors = { Milk: 'rgb(59, 130, 246)', Weight: 'rgb(16, 185, 129)', Wool: 'rgb(245, 158, 11)' }
-
     return {
       labels: allDates.slice(-30),
       datasets: Object.entries(byType).map(([type, dateMap]) => ({
-        label: `${type} Production`,
+        label: `${type}`,
         data: allDates.slice(-30).map(d => dateMap[d] || null),
-        borderColor: colors[type] || '#888',
-        backgroundColor: 'transparent',
         tension: 0.3,
       })),
     }
@@ -63,135 +92,148 @@ export default function ProductionPage() {
   const summaryData = () => {
     if (!dashboard) return null
     return {
-      labels: dashboard.summary.map(s => `${s.production_type} (${s.animal_count} animals)`),
-      datasets: [{
-        label: 'Total Production',
-        data: dashboard.summary.map(s => parseFloat(s.total_quantity)),
-        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
-      }],
+      labels: dashboard.summary.map(s => s.production_type),
+      datasets: [{ label: 'Total', data: dashboard.summary.map(s => parseFloat(s.total_quantity)) }],
     }
   }
 
-  if (loading) return <div className="p-6 text-center text-gray-500">Loading...</div>
+  const logColumns = [
+    { key: 'log_date', label: 'Date', render: (val) => val?.split('T')[0] },
+    { key: 'animal_tag', label: 'Animal', render: (val, row) => <TagBadge tag={val} species={row.animal_species} to={`/animals/${row.animal_id}`} /> },
+    { key: 'production_type', label: 'Type' },
+    { key: 'quantity', label: 'Quantity', render: (val, row) => <span className="font-medium ledger-mono">{val} {row.unit}</span> },
+    { key: 'notes', label: 'Notes', render: (val) => val || '\u2014' },
+  ]
+
+  const renderMobileCard = (l) => (
+    <div>
+      <TagBadge tag={l.animal_tag} species={l.animal_species} to={`/animals/${l.animal_id}`} />
+      <p className="text-xs text-slate2-400 mt-1">
+        {l.log_date?.split('T')[0]} {'\u00B7'} {l.production_type} {'\u00B7'} <span className="font-medium ledger-mono">{l.quantity} {l.unit}</span>
+      </p>
+    </div>
+  )
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Production</h1>
-        <button onClick={() => navigate('/production/add')}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-          + Log Production
-        </button>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Production</h1>
+        <Button size="sm" onClick={openDrawer}><Plus className="w-4 h-4" /> Log Production</Button>
       </div>
 
-      <div className="flex gap-1 mb-4 bg-white rounded-lg shadow p-1 w-fit">
-        {['dashboard', 'logs'].map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded text-sm font-medium capitalize ${tab === t ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-            {t}
-          </button>
-        ))}
+      <div className="flex items-center gap-4 mb-4 flex-wrap">
+        <Tabs tabs={[{ key: 'dashboard', label: 'Dashboard' }, { key: 'logs', label: 'Logs' }]} activeTab={tab} onChange={setTab} className="flex-1" />
+        <div className="flex items-center gap-2">
+          <DatePicker value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className="w-36" />
+          <DatePicker value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className="w-36" />
+          <Button size="sm" variant="secondary" onClick={() => { setLoading(true); fetchData(filters) }}>Filter</Button>
+          {(filters.date_from || filters.date_to) && (
+            <Button variant="ghost" size="sm" onClick={() => { const cleared = { date_from: '', date_to: '' }; setFilters(cleared); fetchData(cleared) }}>Clear</Button>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-          <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-            className="px-3 py-2 border rounded-lg text-sm" />
+      {tab === 'dashboard' && loading && !dashboard && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-[#16201A] rounded-md border border-slate2-400/20 dark:border-slate2-600/20 p-4 animate-pulse" style={{ height: 300 }} />
+            <div className="bg-white dark:bg-[#16201A] rounded-md border border-slate2-400/20 dark:border-slate2-600/20 p-4 animate-pulse" style={{ height: 300 }} />
+          </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-          <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-            className="px-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <button onClick={() => fetchData(filters)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium self-end">Filter</button>
-        {(filters.date_from || filters.date_to) && (
-          <button onClick={() => { const cleared = { date_from: '', date_to: '' }; setFilters(cleared); fetchData(cleared) }}
-            className="px-3 py-2 text-sm text-gray-500 hover:underline self-end">Clear</button>
-        )}
-      </div>
+      )}
+
+      {tab === 'dashboard' && !loading && !dashboard && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-slate2-400 text-sm">Failed to load production data. Try refreshing.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {tab === 'dashboard' && dashboard && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {dashboard.summary.map((s) => (
-              <div key={s.production_type} className="bg-white rounded-xl shadow p-5">
-                <p className="text-sm text-gray-500">{s.production_type}</p>
-                <p className="text-2xl font-bold mt-1">{parseFloat(s.total_quantity).toLocaleString()} <span className="text-sm font-normal text-gray-400">{s.production_type === 'Milk' ? 'L' : s.production_type === 'Wool' ? 'kg' : 'kg'}</span></p>
-                <p className="text-xs text-gray-400 mt-1">{s.total_logs} logs &middot; {s.animal_count} animals</p>
-              </div>
+              <StatCard
+                key={s.production_type}
+                title={s.production_type}
+                value={`${parseFloat(s.total_quantity).toLocaleString()} ${s.production_type === 'Milk' ? 'L' : 'kg'}`}
+                variant={s.production_type === 'Milk' ? 'default' : s.production_type === 'Weight' ? 'pasture' : 'wheat'}
+              >
+                <p className="text-xs text-slate2-400 mt-2">{s.total_logs} logs {'\u00B7'} {s.animal_count} animals</p>
+              </StatCard>
             ))}
-            {dashboard.summary.length === 0 && <div className="col-span-full text-center py-8 text-gray-400">No production data yet.</div>}
           </div>
 
           {dashboard.by_date.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="font-medium text-gray-700 mb-4">Production Trends (30 days)</h3>
-                {chartData() && <Line data={chartData()} options={{ responsive: true, plugins: { legend: { display: false } } }} />}
-              </div>
-              <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="font-medium text-gray-700 mb-4">Production Summary</h3>
-                {summaryData() && <Bar data={summaryData()} options={{ responsive: true, plugins: { legend: { display: false } } }} />}
-              </div>
+              <ChartWrapper type="line" data={chartData()} height={300} />
+              <ChartWrapper type="bar" data={summaryData()} height={300} />
             </div>
           )}
 
           {dashboard.top_animals.length > 0 && (
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="font-medium text-gray-700 mb-4">Top Producing Animals</h3>
-              <table className="w-full text-sm">
-                <thead className="text-gray-600 border-b">
-                  <tr>
-                    <th className="text-left py-2">Animal</th>
-                    <th className="text-left py-2">Species</th>
-                    <th className="text-left py-2">Type</th>
-                    <th className="text-right py-2">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <Card>
+              <CardContent>
+                <h3 className="text-sm font-medium text-ink-900 dark:text-ink-100 mb-3">Top Producing Animals</h3>
+                <div className="space-y-2">
                   {dashboard.top_animals.map((a, i) => (
-                    <tr key={i} className="border-b last:border-0">
-                      <td className="py-2"><Link to={`/animals/${a.id}`} className="text-blue-600 hover:underline">{a.tag_number}</Link></td>
-                      <td className="py-2">{a.species}</td>
-                      <td className="py-2">{a.production_type}</td>
-                      <td className="py-2 text-right font-medium">{parseFloat(a.total_production).toLocaleString()}</td>
-                    </tr>
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <TagBadge tag={a.tag_number} species={a.species} to={`/animals/${a.id}`} />
+                        <span className="text-xs text-slate2-400">{a.production_type}</span>
+                      </div>
+                      <span className="font-medium ledger-mono text-ink-900 dark:text-ink-100">{parseFloat(a.total_production).toLocaleString()}</span>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
 
       {tab === 'logs' && (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-left font-medium">Animal</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-right font-medium">Quantity</th>
-                <th className="px-4 py-3 text-left font-medium">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {logs.map((l) => (
-                <tr key={l.id}>
-                  <td className="px-4 py-3">{l.log_date?.split('T')[0]}</td>
-                  <td className="px-4 py-3"><Link to={`/animals/${l.animal_id}`} className="text-blue-600 hover:underline">{l.animal_tag}</Link></td>
-                  <td className="px-4 py-3">{l.production_type}</td>
-                  <td className="px-4 py-3 text-right font-medium">{l.quantity} {l.unit}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{l.notes || '—'}</td>
-                </tr>
-              ))}
-              {logs.length === 0 && <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No production logs yet.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={logColumns}
+          data={logs}
+          loading={loading}
+          emptyTitle="No production logs yet"
+          emptyDescription="Log the first production entry to start tracking yields."
+          emptyAction={<Button size="sm" onClick={openDrawer}><Plus className="w-4 h-4" /> Log Production</Button>}
+          renderMobileCard={renderMobileCard}
+        />
       )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Log Production">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <SearchableSelect label="Animal" value={form.animal_id} onChange={(v) => setForm({ ...form, animal_id: v })} options={animals} placeholder="Search animal..." required />
+            </div>
+            <DatePicker label="Date *" value={form.log_date} onChange={handleChange} name="log_date" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <SearchableSelect label="Type" value={form.production_type} onChange={(v) => setForm({...form, production_type: v})} options={typeOptions} />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input label="Quantity *" type="number" name="quantity" value={form.quantity} onChange={handleChange} step="0.01" min="0" required />
+              </div>
+              <div className="w-20">
+                <Input label="Unit" name="unit" value={form.unit} onChange={handleChange} />
+              </div>
+            </div>
+          </div>
+          <Textarea label="Notes" name="notes" value={form.notes} onChange={handleChange} rows={2} />
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Log Production'}</Button>
+            <Button type="button" variant="ghost" onClick={() => setDrawerOpen(false)}>Cancel</Button>
+          </div>
+        </form>
+      </Drawer>
     </div>
   )
 }

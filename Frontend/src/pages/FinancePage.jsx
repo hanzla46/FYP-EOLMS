@@ -1,9 +1,24 @@
 import { useState, useEffect } from 'react'
-import { Doughnut } from 'react-chartjs-2'
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import financeService from '../services/financeService'
+import { Button } from '../components/ui/Button'
+import { StatusPill } from '../components/ui/Badge'
+import { StatCard } from '../components/ui/StatCard'
+import { ChartWrapper } from '../components/ui/ChartWrapper'
+import { DataTable } from '../components/ui/DataTable'
+import { Card, CardContent } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
+import { DatePicker } from '../components/ui/DatePicker'
+import { CardSkeleton } from '../components/ui/Skeleton'
+import SearchableSelect from '../components/SearchableSelect'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+const txnTypeOpts = [{id:'Expense',label:'Expense'},{id:'Income',label:'Income'}]
+const txnCategoryOpts = [
+  {id:'Feed',label:'Feed'},{id:'Medication',label:'Medication'},{id:'Breeding',label:'Breeding'},
+  {id:'Equipment',label:'Equipment'},{id:'Labor',label:'Labor'},{id:'Sales',label:'Sales'},{id:'Other',label:'Other'},
+]
+const refEntityOpts = [{id:'',label:'None'},{id:'animal',label:'Animal'},{id:'inventory',label:'Inventory'}]
 
 export default function FinancePage() {
   const [transactions, setTransactions] = useState([])
@@ -16,6 +31,7 @@ export default function FinancePage() {
 
   const fetchData = async (filtersOverride) => {
     setError('')
+    setLoading(true)
     const f = filtersOverride || filters
     try {
       const params = { limit: 50 }
@@ -46,9 +62,10 @@ export default function FinancePage() {
       })
       setForm({ transaction_date: new Date().toISOString().split('T')[0], transaction_type: 'Expense', category: 'Feed', amount: '', description: '', reference_entity_type: 'animal', reference_entity_id: '' })
       setShowForm(false)
+      toast.success('Transaction recorded')
       fetchData()
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed.')
+      toast.error(err.response?.data?.error || 'Failed.')
     }
   }
 
@@ -59,176 +76,134 @@ export default function FinancePage() {
       labels: expenseData.map(c => c.category),
       datasets: [{
         data: expenseData.map(c => c.total_raw),
-        backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'],
       }],
     }
   }
 
-  if (loading) return <div className="p-6 text-center text-gray-500">Loading...</div>
+  const columns = [
+    { key: 'transaction_date', label: 'Date', render: (val) => val?.split('T')[0] },
+    {
+      key: 'transaction_type', label: 'Type',
+      render: (val) => <StatusPill status={val} />,
+    },
+    { key: 'category', label: 'Category' },
+    { key: 'description', label: 'Description', render: (val) => val || '\u2014' },
+    {
+      key: 'amount', label: 'Amount',
+      render: (val, row) => (
+        <span className={`font-medium ledger-mono ${row.transaction_type === 'Income' ? 'text-pasture-600 dark:text-pasture-400' : 'text-clay-600 dark:text-clay-400'}`}>
+          {row.transaction_type === 'Income' ? '+' : '-'}{val}
+        </span>
+      ),
+    },
+  ]
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Finance (Admin)</h1>
-        <button onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-          + Add Transaction
-        </button>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Finance</h1>
+        <Button size="sm" onClick={() => setShowForm(!showForm)}><Plus className="w-4 h-4" /> Add Transaction</Button>
       </div>
 
-      {error && <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
+      {error && <div className="mb-4 p-3 bg-clay-100 dark:bg-clay-600/20 border border-clay-400/30 dark:border-clay-400/20 text-clay-600 dark:text-clay-400 rounded-sm text-sm">{error}</div>}
 
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-          <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-            className="px-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-          <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-            className="px-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <button onClick={() => fetchData(filters)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium self-end">Filter</button>
+        <DatePicker value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className="w-40" />
+        <DatePicker value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className="w-40" />
+        <Button size="sm" variant="secondary" onClick={() => fetchData(filters)}>Filter</Button>
         {(filters.date_from || filters.date_to) && (
-          <button onClick={() => { const cleared = { date_from: '', date_to: '' }; setFilters(cleared); fetchData(cleared) }}
-            className="px-3 py-2 text-sm text-gray-500 hover:underline self-end">Clear</button>
+          <Button variant="ghost" size="sm" onClick={() => { const cleared = { date_from: '', date_to: '' }; setFilters(cleared); fetchData(cleared) }}>Clear</Button>
         )}
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 mb-6 space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
-              <input type="date" value={form.transaction_date} onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" required />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Type *</label>
-              <select value={form.transaction_type} onChange={(e) => setForm({ ...form, transaction_type: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" required>
-                <option value="Expense">Expense</option>
-                <option value="Income">Income</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" required>
-                <option value="Feed">Feed</option>
-                <option value="Medication">Medication</option>
-                <option value="Breeding">Breeding</option>
-                <option value="Equipment">Equipment</option>
-                <option value="Labor">Labor</option>
-                <option value="Sales">Sales</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Amount (PKR) *</label>
-              <input type="number" step="0.01" min="0.01" value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" required />
-            </div>
-          </div>
+        <Card className="mb-4">
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <DatePicker label="Date *" value={form.transaction_date} onChange={(e) => setForm({ ...form, transaction_date: e.target.value })} />
+                <SearchableSelect label="Type *" value={form.transaction_type} onChange={(v) => setForm({...form, transaction_type: v})} options={txnTypeOpts} />
+                <SearchableSelect label="Category *" value={form.category} onChange={(v) => setForm({...form, category: v})} options={txnCategoryOpts} />
+                <Input label="Amount (PKR) *" type="number" step="0.01" min="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Input label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                <SearchableSelect label="Ref Entity" value={form.reference_entity_type} onChange={(v) => setForm({...form, reference_entity_type: v})} options={refEntityOpts} />
+                <Input label="Ref ID" type="number" value={form.reference_entity_id} onChange={(e) => setForm({ ...form, reference_entity_id: e.target.value })} />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <Button type="submit" size="sm">Save</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {loading && !summary && (
+        <div className="space-y-6">
           <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-              <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Ref Entity</label>
-              <select value={form.reference_entity_type} onChange={(e) => setForm({ ...form, reference_entity_type: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">None</option>
-                <option value="animal">Animal</option>
-                <option value="inventory">Inventory</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Ref ID</label>
-              <input type="number" value={form.reference_entity_id} onChange={(e) => setForm({ ...form, reference_entity_id: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
+            {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
           </div>
-          <div className="flex gap-3 pt-1">
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Save</button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-[#16201A] rounded-md border border-slate2-400/20 dark:border-slate2-600/20 p-4 animate-pulse" style={{ height: 280 }} />
+            <div className="bg-white dark:bg-[#16201A] rounded-md border border-slate2-400/20 dark:border-slate2-600/20 p-4 animate-pulse" style={{ height: 280 }} />
           </div>
-        </form>
+        </div>
+      )}
+
+      {!loading && !summary && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-slate2-400 text-sm">{error || 'No financial data available.'}</p>
+          </CardContent>
+        </Card>
       )}
 
       {summary && (
         <>
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow p-5">
-              <p className="text-sm text-gray-500">Income</p>
-              <p className="text-2xl font-bold text-green-600">{summary.income}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-5">
-              <p className="text-sm text-gray-500">Expenses</p>
-              <p className="text-2xl font-bold text-red-600">{summary.expenses}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-5">
-              <p className="text-sm text-gray-500">Net P&L</p>
-              <p className={`text-2xl font-bold ${summary.net_raw >= 0 ? 'text-green-600' : 'text-red-600'}`}>{summary.net}</p>
-            </div>
+            <StatCard title="Income" value={summary.income} variant="pasture" />
+            <StatCard title="Expenses" value={summary.expenses} variant="clay" />
+            <StatCard
+              title="Net P&L"
+              value={summary.net}
+              variant={summary.net_raw >= 0 ? 'pasture' : 'clay'}
+            />
           </div>
 
-          {doughnutData() && (
+          {doughnutData() && doughnutData().datasets[0].data.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
-                <h3 className="font-medium text-gray-700 mb-4">Expenses by Category</h3>
-                <div className="w-64">
-                  <Doughnut data={doughnutData()} options={{ responsive: true }} />
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow p-6">
-                <h3 className="font-medium text-gray-700 mb-4">By Category</h3>
-                <div className="space-y-2">
-                  {summary.by_category.map((c, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'][i % 7] }}></span>
-                        <span>{c.category}</span>
+              <ChartWrapper type="doughnut" data={doughnutData()} height={280} />
+              <Card>
+                <CardContent>
+                  <h3 className="text-sm font-medium text-ink-900 dark:text-ink-100 mb-4">By Category</h3>
+                  <div className="space-y-2">
+                    {summary.by_category.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: ['#B23A2E', '#E2675A', '#C8862B', '#4CAE82', '#1F4D3A', '#6B7770', '#9AA79E'][i % 7] }} />
+                          <span className="text-ink-900 dark:text-ink-100">{c.category}</span>
+                        </div>
+                        <span className={`font-medium ledger-mono ${c.transaction_type === 'Income' ? 'text-pasture-600 dark:text-pasture-400' : 'text-clay-600 dark:text-clay-400'}`}>
+                          {c.transaction_type === 'Income' ? '+' : '-'}{c.total}
+                        </span>
                       </div>
-                      <span className={`font-medium ${c.transaction_type === 'Income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {c.transaction_type === 'Income' ? '+' : '-'}{c.total}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium">Date</th>
-                  <th className="px-4 py-3 text-left font-medium">Type</th>
-                  <th className="px-4 py-3 text-left font-medium">Category</th>
-                  <th className="px-4 py-3 text-left font-medium">Description</th>
-                  <th className="px-4 py-3 text-right font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {transactions.map((t) => (
-                  <tr key={t.id}>
-                    <td className="px-4 py-3">{t.transaction_date?.split('T')[0]}</td>
-                    <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.transaction_type === 'Income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.transaction_type}</span></td>
-                    <td className="px-4 py-3">{t.category}</td>
-                    <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{t.description || '—'}</td>
-                    <td className="px-4 py-3 text-right font-medium">{t.amount}</td>
-                  </tr>
-                ))}
-                {transactions.length === 0 && <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No transactions.</td></tr>}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={columns}
+            data={transactions}
+            loading={loading}
+            emptyTitle="No transactions"
+            emptyDescription="Record your first financial transaction."
+            emptyAction={<Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Add Transaction</Button>}
+          />
         </>
       )}
     </div>

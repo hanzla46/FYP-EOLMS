@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button } from './ui/Button'
 
 export default function FileUpload({ onUpload, accept = 'image/jpeg,image/png,image/webp,application/pdf', label = 'Upload File', preview = false }) {
   const [selectedFile, setSelectedFile] = useState(null)
@@ -40,21 +41,20 @@ export default function FileUpload({ onUpload, accept = 'image/jpeg,image/png,im
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-ink-900 dark:text-ink-100">{label}</label>
       <div className="flex items-center gap-3">
         <input type="file" onChange={handleFileChange} accept={accept}
-          className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+          className="text-sm text-ink-900 dark:text-ink-100 file:mr-3 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-pasture-100 dark:file:bg-pasture-600/20 file:text-pasture-600 dark:file:text-pasture-400 hover:file:bg-pasture-200 dark:hover:file:bg-pasture-600/30" />
         {selectedFile && (
-          <button type="button" onClick={handleUpload} disabled={uploading}
-            className="px-4 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium">
+          <Button size="sm" type="button" onClick={handleUpload} disabled={uploading}>
             {uploading ? 'Uploading...' : 'Upload'}
-          </button>
+          </Button>
         )}
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      {selectedFile && <p className="text-xs text-gray-500">{selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)</p>}
+      {error && <p className="text-xs text-clay-600 dark:text-clay-400">{error}</p>}
+      {selectedFile && <p className="text-xs text-slate2-400">{selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)</p>}
       {previewUrl && (
-        <img src={previewUrl} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg border" />
+        <img src={previewUrl} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-sm border border-slate2-400/20 dark:border-slate2-600/20" />
       )}
     </div>
   )

@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Paperclip } from 'lucide-react'
 import healthService from '../services/healthService'
 import animalService from '../services/animalService'
 import SearchableSelect from '../components/SearchableSelect'
+import { Button } from '../components/ui/Button'
+import { TagBadge } from '../components/ui/TagBadge'
+import { DataTable } from '../components/ui/DataTable'
+import { StatusPill } from '../components/ui/Badge'
+import { DatePicker } from '../components/ui/DatePicker'
 
 export default function HealthRecordsPage() {
   const [records, setRecords] = useState([])
@@ -10,6 +16,7 @@ export default function HealthRecordsPage() {
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 })
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ animal_id: null, date_from: '', date_to: '' })
+  const navigate = useNavigate()
 
   const fetchRecords = async (page = 1) => {
     setLoading(true)
@@ -23,87 +30,96 @@ export default function HealthRecordsPage() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchRecords()
-    animalService.list({ limit: 200 }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''}` }))))
+    animalService.list({ limit: 200 }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} \u00B7 ${a.breed || ''}` }))))
   }, [])
 
+  const isSuspected = (diagnosis) => {
+    return diagnosis?.toLowerCase().includes('suspected') || diagnosis?.toLowerCase().includes('anthrax')
+  }
+
+  const columns = [
+    { key: 'record_date', label: 'Date', render: (val) => val?.split('T')[0] },
+    {
+      key: 'animal_tag', label: 'Animal',
+      render: (val, row) => <TagBadge tag={val} species={row.animal_species} to={`/animals/${row.animal_id}`} />,
+    },
+    { key: 'vet_name', label: 'Vet' },
+    {
+      key: 'diagnosis', label: 'Diagnosis / Vaccination',
+      render: (val, row) => {
+        const display = row.vaccination_schedule_name || val || '\u2014'
+        if (isSuspected(val)) {
+          return <span className="flex items-center gap-2">{display} <StatusPill status="Suspected" /></span>
+        }
+        return display
+      },
+    },
+    {
+      key: 'medication_given', label: 'Medication',
+      render: (val, row) => val ? `${val} \u2014 ${row.medication_quantity} ${row.medication_unit}` : '\u2014',
+    },
+    {
+      key: 'withdrawal_days', label: 'Withdrawal',
+      render: (val) => val > 0 ? (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-wheat-100 text-wheat-500 dark:bg-wheat-500/20 dark:text-wheat-400">{val} days remaining</span>
+      ) : '\u2014',
+    },
+    {
+      key: 'attachment_count', label: 'Docs',
+      render: (val) => val > 0 ? (
+        <span className="inline-flex items-center gap-1 text-xs text-slate2-400"><Paperclip className="w-3 h-3" />{val}</span>
+      ) : '\u2014',
+    },
+  ]
+
+  const renderMobileCard = (r) => (
+    <div>
+      <div className="flex items-center gap-2">
+        <TagBadge tag={r.animal_tag} species={r.animal_species} to={`/animals/${r.animal_id}`} />
+        {isSuspected(r.diagnosis) && <StatusPill status="Suspected" />}
+      </div>
+      <p className="text-xs text-slate2-400 mt-1">
+        {r.record_date?.split('T')[0]} {'\u00B7'} {r.vet_name}
+        {r.diagnosis ? ` \u00B7 ${r.diagnosis}` : ''}
+      </p>
+      {r.withdrawal_days > 0 && (
+        <span className="inline-flex mt-1 text-xs text-wheat-500 dark:text-wheat-400">{r.withdrawal_days} days withdrawal</span>
+      )}
+    </div>
+  )
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Health Records</h1>
-        <Link to="/health/new" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-          + New Record
-        </Link>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Health Records</h1>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => navigate('/health/new')}><Plus className="w-4 h-4" /> New Record</Button>
+          <Button size="sm" variant="outline" onClick={() => navigate('/health/timeline')}>Timeline View</Button>
+        </div>
       </div>
 
-      <div className="flex gap-3 mb-6 flex-wrap items-end">
+      <div className="flex gap-3 mb-4 flex-wrap items-end">
         <div className="w-64">
           <SearchableSelect label="Animal" value={filters.animal_id} onChange={(v) => setFilters({ ...filters, animal_id: v })} options={animals} placeholder="All animals..." />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">From</label>
-          <input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-            className="px-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-          <input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-            className="px-3 py-2 border rounded-lg text-sm" />
-        </div>
-        <button onClick={() => fetchRecords(1)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Filter</button>
+        <DatePicker label="From" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className="w-40" />
+        <DatePicker label="To" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className="w-40" />
+        <Button size="sm" variant="secondary" onClick={() => fetchRecords(1)}>Filter</Button>
       </div>
 
-      {loading ? <div className="text-center py-12 text-gray-500">Loading...</div> : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-left font-medium">Animal</th>
-                <th className="px-4 py-3 text-left font-medium">Vet</th>
-                <th className="px-4 py-3 text-left font-medium">Diagnosis / Vaccination</th>
-                <th className="px-4 py-3 text-left font-medium">Medication</th>
-                <th className="px-4 py-3 text-left font-medium">Withdrawal</th>
-                <th className="px-4 py-3 text-center font-medium">Docs</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {records.map((r) => (
-                <tr key={r.id}>
-                  <td className="px-4 py-3">{r.record_date?.split('T')[0]}</td>
-                  <td className="px-4 py-3"><Link to={`/animals/${r.animal_id}`} className="text-blue-600 hover:underline">{r.animal_tag}</Link></td>
-                  <td className="px-4 py-3">{r.vet_name}</td>
-                  <td className="px-4 py-3">{r.vaccination_schedule_name || r.diagnosis || '—'}</td>
-                  <td className="px-4 py-3">{r.medication_given ? `${r.medication_given} — ${r.medication_quantity} ${r.medication_unit}` : '—'}</td>
-                  <td className="px-4 py-3">{r.withdrawal_days > 0 ? `${r.withdrawal_days} days` : '—'}</td>
-                  <td className="px-4 py-3 text-center">
-                    {r.attachment_count > 0 ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                        {r.attachment_count}
-                      </span>
-                    ) : '—'}
-                  </td>
-                </tr>
-              ))}
-              {records.length === 0 && <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No records found.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-sm text-gray-600">Page {pagination.page} of {pagination.totalPages}</span>
-          <div className="flex gap-2">
-            <button disabled={pagination.page <= 1} onClick={() => fetchRecords(pagination.page - 1)}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-50">Prev</button>
-            <button disabled={pagination.page >= pagination.totalPages} onClick={() => fetchRecords(pagination.page + 1)}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-50">Next</button>
-          </div>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={records}
+        loading={loading}
+        emptyTitle="No health records yet"
+        emptyDescription="Log the first vet visit to start building your herd's medical history."
+        emptyAction={<Button size="sm" onClick={() => navigate('/health/new')}><Plus className="w-4 h-4" /> New Health Record</Button>}
+        pagination={pagination}
+        onPageChange={fetchRecords}
+        renderMobileCard={renderMobileCard}
+      />
     </div>
   )
 }

@@ -1,1 +1,71 @@
 @import "tailwindcss";
+
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@theme {
+  --color-pasture-100: #E3EEE7;
+  --color-pasture-400: #4CAE82;
+  --color-pasture-500: #2C6B4F;
+  --color-pasture-600: #1F4D3A;
+
+  --color-wheat-100: #F6E8D2;
+  --color-wheat-400: #E0A24A;
+  --color-wheat-500: #C8862B;
+
+  --color-clay-100: #F5DEDB;
+  --color-clay-400: #E2675A;
+  --color-clay-600: #B23A2E;
+
+  --color-mist-50: #F2F4F1;
+  --color-mist-900: #11181B;
+
+  --color-ink-900: #16241D;
+  --color-ink-100: #ECEFEA;
+
+  --color-slate2-400: #6B7770;
+  --color-slate2-600: #9AA79E;
+
+  --font-sans: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  font-family: var(--font-sans);
+}
+
+body {
+  background-color: var(--color-mist-50);
+  color: var(--color-ink-900);
+}
+
+.dark body {
+  background-color: var(--color-mist-900);
+  color: var(--color-ink-100);
+}
+
+.ledger-mono {
+  font-family: var(--font-mono);
+}
+
+.focus-ring {
+  outline: 2px solid var(--color-pasture-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

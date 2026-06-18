@@ -1,8 +1,21 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Plus, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 import breedingService from '../services/breedingService'
 import animalService from '../services/animalService'
 import SearchableSelect from '../components/SearchableSelect'
+import { Button } from '../components/ui/Button'
+import { StatusPill } from '../components/ui/Badge'
+import { TagBadge } from '../components/ui/TagBadge'
+import { DataTable } from '../components/ui/DataTable'
+import { Drawer } from '../components/ui/Drawer'
+import { Input } from '../components/ui/Input'
+import { DatePicker } from '../components/ui/DatePicker'
+import { Card, CardContent } from '../components/ui/Card'
+
+const inseminationTypeOpts = [{id:'Natural',label:'Natural'},{id:'AI',label:'AI'}]
+const genderOpts = [{id:'Female',label:'Female'},{id:'Male',label:'Male'}]
 
 export default function BreedingPage() {
   const [records, setRecords] = useState([])
@@ -12,11 +25,12 @@ export default function BreedingPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ dam_id: null, sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
   const [formError, setFormError] = useState('')
-  const [calvingModal, setCalvingModal] = useState({ open: false, recordId: null })
+  const navigate = useNavigate()
+  const [calvingDrawer, setCalvingDrawer] = useState({ open: false, recordId: null })
   const [calvingForm, setCalvingForm] = useState({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', calving_genders: ['Female'], calving_breed: '', register_offspring: true })
 
   useEffect(() => {
-    animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} · ${a.breed || ''}` }))))
+    animalService.list({ limit: 200, gender: 'Female' }).then(res => setAnimals(res.data.data.map(a => ({ id: a.id, label: `${a.tag_number}`, sub: `${a.species} \u00B7 ${a.breed || ''}` }))))
   }, [])
 
   const fetchRecords = async (page = 1) => {
@@ -42,9 +56,10 @@ export default function BreedingPage() {
       await breedingService.logInsemination({ ...form })
       setForm({ dam_id: null, sire_identity: '', insemination_date: new Date().toISOString().split('T')[0], insemination_type: 'Natural', notes: '' })
       setShowForm(false)
+      toast.success('Insemination logged')
       fetchRecords()
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to log insemination.')
+      toast.error(err.response?.data?.error || 'Failed.')
     }
   }
 
@@ -53,18 +68,19 @@ export default function BreedingPage() {
       await breedingService.pregnancyCheck(recordId, { pregnancy_confirmed: true, pregnancy_check_date: new Date().toISOString().split('T')[0] })
       fetchRecords()
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed.')
+      toast.error(err.response?.data?.error || 'Failed.')
     }
   }
 
   const handleRecordCalving = async (e) => {
     e.preventDefault()
     try {
-      await breedingService.recordCalving(calvingModal.recordId, calvingForm)
-      setCalvingModal({ open: false, recordId: null })
+      await breedingService.recordCalving(calvingDrawer.recordId, calvingForm)
+      setCalvingDrawer({ open: false, recordId: null })
+      toast.success('Calving recorded')
       fetchRecords()
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed.')
+      toast.error(err.response?.data?.error || 'Failed.')
     }
   }
 
@@ -76,217 +92,180 @@ export default function BreedingPage() {
     setCalvingForm({ ...calvingForm, offspring_count: count, calving_genders: genders })
   }
 
-  const getStatusBadge = (r) => {
-    if (r.pregnancy_confirmed && r.actual_calving_date) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Calved ({r.offspring_count})</span>
-    if (r.pregnancy_confirmed) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Pregnant</span>
-    if (r.pregnancy_check_date && !r.pregnancy_confirmed) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Not Pregnant</span>
-    return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Pending Check</span>
+  const getBreedingStatus = (r) => {
+    if (r.pregnancy_confirmed && r.actual_calving_date) return `Calved (${r.offspring_count})`
+    if (r.pregnancy_confirmed) return 'Pregnant'
+    if (r.pregnancy_check_date && !r.pregnancy_confirmed) return 'Not Pregnant'
+    return 'Pending'
   }
 
   const today = new Date().toISOString().split('T')[0]
 
+  const columns = [
+    {
+      key: 'dam_tag', label: 'Dam',
+      render: (val, row) => (
+        <div className="flex items-center gap-2">
+          <TagBadge tag={val} species={row.dam_species} to={`/animals/${row.dam_id}`} />
+        </div>
+      ),
+    },
+    { key: 'sire_identity', label: 'Sire', render: (val) => <span className="font-mono text-xs">{val}</span> },
+    { key: 'insemination_date', label: 'Insemination', render: (val) => val?.split('T')[0] },
+    { key: 'insemination_type', label: 'Type' },
+    {
+      key: 'status', label: 'Status',
+      render: (val, row) => <StatusPill status={getBreedingStatus(row)} />,
+    },
+    {
+      key: 'estimated_calving_date', label: 'Expected Calving',
+      render: (val, row) => {
+        if (!val) return '\u2014'
+        const isDue = val <= today && !row.actual_calving_date
+        return (
+          <span className={isDue ? 'text-wheat-500 dark:text-wheat-400 font-medium flex items-center gap-1' : ''}>
+            {val.split('T')[0]}
+            {isDue && <AlertTriangle className="w-3 h-3" />}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'id', label: 'Action',
+      render: (val, row) => (
+        <div className="flex gap-1">
+          {!row.pregnancy_confirmed && !row.actual_calving_date && (
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); handlePregnancyCheck(val) }}>Confirm Pregnant</Button>
+          )}
+          {row.pregnancy_confirmed && !row.actual_calving_date && (
+            <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); setCalvingForm({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', calving_genders: ['Female'], calving_breed: row.dam_breed || '', register_offspring: true }); setCalvingDrawer({ open: true, recordId: val }) }}>
+              Record Calving
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ]
+
+  const renderMobileCard = (r) => (
+    <div>
+      <div className="flex items-center gap-2">
+        <TagBadge tag={r.dam_tag} species={r.dam_species} to={`/animals/${r.dam_id}`} />
+        <StatusPill status={getBreedingStatus(r)} />
+      </div>
+      <p className="text-xs text-slate2-400 mt-1">
+        Sire: {r.sire_identity} {'\u00B7'} {r.insemination_date?.split('T')[0]}
+        {r.estimated_calving_date ? ` \u00B7 Due ${r.estimated_calving_date.split('T')[0]}` : ''}
+      </p>
+    </div>
+  )
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Breeding Records</h1>
-        <button onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-          + Log Insemination
-        </button>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Breeding Records</h1>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => navigate('/breeding/kanban')}>Kanban View</Button>
+          <Button size="sm" onClick={() => setShowForm(!showForm)}><Plus className="w-4 h-4" /> Log Insemination</Button>
+        </div>
       </div>
 
       {showForm && (
-        <form onSubmit={handleInsemination} className="bg-white rounded-xl shadow p-6 mb-6 space-y-3">
-          {formError && <p className="text-sm text-red-600">{formError}</p>}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              {animals.length > 0 ? (
-                <SearchableSelect label="Dam (Female)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female..." />
-              ) : (
-                <>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Dam (Female) ID</label>
-                  <input type="number" value={form.dam_id || ''} onChange={(e) => setForm({ ...form, dam_id: e.target.value ? parseInt(e.target.value) : null })}
-                    placeholder="No females registered yet" className="w-full px-3 py-2 border rounded-lg text-sm" />
-                </>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Sire Identity *</label>
-              <input value={form.sire_identity} onChange={(e) => setForm({ ...form, sire_identity: e.target.value })}
-                placeholder="Tag or external ID" className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
-              <input type="date" value={form.insemination_date} onChange={(e) => setForm({ ...form, insemination_date: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-              <select value={form.insemination_type} onChange={(e) => setForm({ ...form, insemination_type: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="Natural">Natural</option>
-                <option value="AI">AI</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-              <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-          </div>
-          <div className="flex gap-3 pt-1">
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Save</button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-          </div>
-        </form>
-      )}
-
-      {loading ? <div className="text-center py-12 text-gray-500">Loading...</div> : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Dam</th>
-                <th className="px-4 py-3 text-left font-medium">Sire</th>
-                <th className="px-4 py-3 text-left font-medium">Insemination</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="px-4 py-3 text-left font-medium">Expected Calving</th>
-                <th className="px-4 py-3 text-left font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {records.map((r) => (
-                <tr key={r.id} className={r.estimated_calving_date && r.estimated_calving_date <= today && !r.actual_calving_date ? 'bg-yellow-50' : ''}>
-                  <td className="px-4 py-3">
-                    <Link to={`/animals/${r.dam_id}`} className="text-blue-600 hover:underline font-medium">{r.dam_tag}</Link>
-                    <span className="text-gray-400 text-xs ml-1">({r.dam_species})</span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">{r.sire_identity}</td>
-                  <td className="px-4 py-3">{r.insemination_date?.split('T')[0]}</td>
-                  <td className="px-4 py-3">{r.insemination_type}</td>
-                  <td className="px-4 py-3">{getStatusBadge(r)}</td>
-                  <td className="px-4 py-3">
-                    {r.estimated_calving_date ? (
-                      <span className={r.estimated_calving_date <= today ? 'text-orange-600 font-medium' : ''}>
-                        {r.estimated_calving_date.split('T')[0]}
-                        {r.estimated_calving_date <= today && !r.actual_calving_date && ' (Due!)'}
-                      </span>
-                    ) : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {!r.pregnancy_confirmed && !r.actual_calving_date && (
-                      <button onClick={() => handlePregnancyCheck(r.id)}
-                        className="text-xs px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700">
-                        Confirm Pregnant
-                      </button>
-                    )}
-                    {r.pregnancy_confirmed && !r.actual_calving_date && (
-                      <button onClick={() => { setCalvingForm({ actual_calving_date: new Date().toISOString().split('T')[0], offspring_count: '1', calving_genders: ['Female'], calving_breed: r.dam_breed || '', register_offspring: true }); setCalvingModal({ open: true, recordId: r.id }) }}
-                        className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
-                        Record Calving
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {records.length === 0 && <tr><td colSpan="7" className="px-4 py-8 text-center text-gray-500">No breeding records.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-sm text-gray-600">Page {pagination.page} of {pagination.totalPages}</span>
-          <div className="flex gap-2">
-            <button disabled={pagination.page <= 1} onClick={() => fetchRecords(pagination.page - 1)}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-50">Prev</button>
-            <button disabled={pagination.page >= pagination.totalPages} onClick={() => fetchRecords(pagination.page + 1)}
-              className="px-3 py-1 border rounded text-sm disabled:opacity-50">Next</button>
-          </div>
-        </div>
-      )}
-
-      {calvingModal.open && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Record Calving</h2>
-            <form onSubmit={handleRecordCalving} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Calving Date</label>
-                <input type="date" value={calvingForm.actual_calving_date}
-                  onChange={(e) => setCalvingForm({ ...calvingForm, actual_calving_date: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Offspring Count</label>
-                <input type="number" value={calvingForm.offspring_count} min="1" max="5"
-                  onChange={(e) => updateOffspringCount(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg text-sm" />
-              </div>
-              {calvingForm.register_offspring && (
+        <Card className="mb-4">
+          <CardContent>
+            <form onSubmit={handleInsemination} className="space-y-3">
+              {formError && <p className="text-sm text-clay-600 dark:text-clay-400">{formError}</p>}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-medium text-gray-600">Gender Split</label>
-                    <span className="text-xs text-gray-500">
-                      {calvingForm.calving_genders.filter(g => g === 'Female').length} F
-                      &middot; {calvingForm.calving_genders.filter(g => g === 'Male').length} M
-                    </span>
-                  </div>
-                  <input type="range" min="0" max={parseInt(calvingForm.offspring_count) || 1}
-                    value={calvingForm.calving_genders.filter(g => g === 'Female').length}
-                    onChange={(e) => {
-                      const females = parseInt(e.target.value)
-                      const total = parseInt(calvingForm.offspring_count) || 1
-                      const genders = []
-                      for (let i = 0; i < total; i++) genders.push(i < females ? 'Female' : 'Male')
-                      setCalvingForm({ ...calvingForm, calving_genders: genders })
-                    }}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-                  <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-                    <span>All M</span>
-                    <span>All F</span>
-                  </div>
+                  {animals.length > 0 ? (
+                    <SearchableSelect label="Dam (Female)" value={form.dam_id} onChange={(v) => setForm({ ...form, dam_id: v })} options={animals} placeholder="Search female..." />
+                  ) : (
+                    <Input label="Dam (Female) ID" type="number" value={form.dam_id || ''} onChange={(e) => setForm({ ...form, dam_id: e.target.value ? parseInt(e.target.value) : null })} />
+                  )}
                 </div>
-              )}
-              {!calvingForm.register_offspring && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Gender</label>
-                  <select value={calvingForm.calving_genders[0] || 'Female'}
-                    onChange={(e) => setCalvingForm({ ...calvingForm, calving_genders: [e.target.value] })}
-                    className="w-full px-3 py-2 border rounded-lg text-sm">
-                    <option value="Female">Female</option>
-                    <option value="Male">Male</option>
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Breed (defaults to dam's breed)</label>
-                <input value={calvingForm.calving_breed}
-                  onChange={(e) => setCalvingForm({ ...calvingForm, calving_breed: e.target.value })}
-                  placeholder="Inherited from dam" className="w-full px-3 py-2 border rounded-lg text-sm" />
+                <Input label="Sire Identity *" value={form.sire_identity} onChange={(e) => setForm({ ...form, sire_identity: e.target.value })} placeholder="Tag or external ID" />
+                <DatePicker label="Date *" value={form.insemination_date} onChange={(e) => setForm({ ...form, insemination_date: e.target.value })} />
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={calvingForm.register_offspring}
-                  onChange={(e) => setCalvingForm({ ...calvingForm, register_offspring: e.target.checked })}
-                  className="rounded" />
-                <span className="text-gray-700">Auto-register offspring as new animals</span>
-              </label>
-              {calvingForm.register_offspring && (
-                <p className="text-xs text-blue-600">Offspring will be created with auto-generated tags and linked to this dam.</p>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">Save</button>
-                <button type="button" onClick={() => setCalvingModal({ open: false, recordId: null })}
-                  className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <div className="grid grid-cols-2 gap-4">
+                <SearchableSelect label="Type" value={form.insemination_type} onChange={(v) => setForm({ ...form, insemination_type: v })} options={inseminationTypeOpts} />
+                <Input label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              <div className="flex gap-3">
+                <Button type="submit" size="sm">Save</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
             </form>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
+
+      <DataTable
+        columns={columns}
+        data={records}
+        loading={loading}
+        emptyTitle="No breeding records"
+        emptyDescription="Log the first insemination to start tracking breeding cycles."
+        emptyAction={<Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Log Insemination</Button>}
+        pagination={pagination}
+        onPageChange={fetchRecords}
+        renderMobileCard={renderMobileCard}
+      />
+
+      <Drawer
+        open={calvingDrawer.open}
+        onClose={() => setCalvingDrawer({ open: false, recordId: null })}
+        title="Record Calving"
+      >
+        <form onSubmit={handleRecordCalving} className="space-y-3">
+          <DatePicker label="Calving Date" value={calvingForm.actual_calving_date} onChange={(e) => setCalvingForm({ ...calvingForm, actual_calving_date: e.target.value })} />
+          <Input label="Offspring Count" type="number" value={calvingForm.offspring_count} min="1" max="5" onChange={(e) => updateOffspringCount(e.target.value)} />
+
+          {calvingForm.register_offspring && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-ink-900 dark:text-ink-100">Gender Split</label>
+                <span className="text-xs text-slate2-400">
+                  {calvingForm.calving_genders.filter(g => g === 'Female').length} F \u00B7 {calvingForm.calving_genders.filter(g => g === 'Male').length} M
+                </span>
+              </div>
+              <input type="range" min="0" max={parseInt(calvingForm.offspring_count) || 1}
+                value={calvingForm.calving_genders.filter(g => g === 'Female').length}
+                onChange={(e) => {
+                  const females = parseInt(e.target.value)
+                  const total = parseInt(calvingForm.offspring_count) || 1
+                  const genders = []
+                  for (let i = 0; i < total; i++) genders.push(i < females ? 'Female' : 'Male')
+                  setCalvingForm({ ...calvingForm, calving_genders: genders })
+                }}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-mist-50 dark:bg-mist-900 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-pasture-500" />
+              <div className="flex justify-between text-xs text-slate2-400 mt-0.5">
+                <span>All Female</span>
+                <span>All Male</span>
+              </div>
+            </div>
+          )}
+
+          {!calvingForm.register_offspring && (
+            <SearchableSelect label="Gender" value={calvingForm.calving_genders[0] || 'Female'} onChange={(v) => setCalvingForm({ ...calvingForm, calving_genders: [v] })} options={genderOpts} />
+          )}
+
+          <Input label="Breed (defaults to dam's breed)" value={calvingForm.calving_breed} onChange={(e) => setCalvingForm({ ...calvingForm, calving_breed: e.target.value })} placeholder="Inherited from dam" />
+
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={calvingForm.register_offspring} onChange={(e) => setCalvingForm({ ...calvingForm, register_offspring: e.target.checked })} className="rounded" />
+            <span className="text-ink-900 dark:text-ink-100">Auto-register offspring as new animals</span>
+          </label>
+
+          {calvingForm.register_offspring && (
+            <p className="text-xs text-pasture-600 dark:text-pasture-400">Offspring will be created with auto-generated tags and linked to this dam.</p>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button type="submit">Save</Button>
+            <Button type="button" variant="ghost" onClick={() => setCalvingDrawer({ open: false, recordId: null })}>Cancel</Button>
+          </div>
+        </form>
+      </Drawer>
     </div>
   )
 }

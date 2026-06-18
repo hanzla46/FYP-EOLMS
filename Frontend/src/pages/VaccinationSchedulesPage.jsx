@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import vaccinationService from '../services/vaccinationService'
 import inventoryService from '../services/inventoryService'
 import SearchableSelect from '../components/SearchableSelect'
+import { Button } from '../components/ui/Button'
+import { Input, Textarea } from '../components/ui/Input'
+import { Card, CardContent } from '../components/ui/Card'
+import { DataTable } from '../components/ui/DataTable'
+
+const speciesOpts = [{id:'All',label:'All'},{id:'Cattle',label:'Cattle'},{id:'Sheep',label:'Sheep'},{id:'Goat',label:'Goat'}]
 
 export default function VaccinationSchedulesPage() {
   const [schedules, setSchedules] = useState([])
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ vaccine_name: '', target_species: 'All', age_days: '', booster_interval_days: '', inventory_item_id: null, notes: '' })
   const [error, setError] = useState('')
@@ -32,107 +42,74 @@ export default function VaccinationSchedulesPage() {
       await vaccinationService.create(payload)
       setForm({ vaccine_name: '', target_species: 'All', age_days: '', booster_interval_days: '', inventory_item_id: null, notes: '' })
       setShowForm(false)
+      toast.success('Schedule created')
       fetchSchedules()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create schedule.')
+      toast.error(err.response?.data?.error || 'Failed to create schedule.')
     }
   }
 
+  const columns = [
+    { key: 'vaccine_name', label: 'Vaccine', render: (val) => <span className="font-medium">{val}</span> },
+    { key: 'target_species', label: 'Species' },
+    { key: 'age_days', label: 'Age (days)', render: (val) => val || '\u2014' },
+    { key: 'booster_interval_days', label: 'Booster', render: (val) => val ? `${val} days` : '\u2014' },
+    {
+      key: 'inventory_stock', label: 'Stock',
+      render: (val, row) => row.inventory_item_name ? (
+        <span className={parseFloat(val) <= 0 ? 'text-clay-600 dark:text-clay-400 font-medium' : ''}>
+          {val} {row.inventory_unit}
+          <span className="text-xs text-slate2-400 ml-1">({row.inventory_item_name})</span>
+        </span>
+      ) : <span className="text-slate2-400 text-xs">No stock linked</span>,
+    },
+    { key: 'notes', label: 'Notes', render: (val) => val || '\u2014' },
+  ]
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Vaccination Schedules</h1>
-        <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">
-          + Add Schedule
-        </button>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-semibold text-ink-900 dark:text-ink-100">Vaccination Schedules</h1>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={() => navigate('/vaccination-schedules/calendar')}>
+            Calendar
+          </Button>
+          <Button size="sm" onClick={() => setShowForm(!showForm)}><Plus className="w-4 h-4" /> Add Schedule</Button>
+        </div>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow p-6 mb-6 space-y-3">
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Vaccine Name *</label>
-              <input value={form.vaccine_name} onChange={(e) => setForm({ ...form, vaccine_name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" required />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Target Species</label>
-              <select value={form.target_species} onChange={(e) => setForm({ ...form, target_species: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="All">All</option>
-                <option value="Cattle">Cattle</option>
-                <option value="Sheep">Sheep</option>
-                <option value="Goat">Goat</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Age (days)</label>
-              <input type="number" value={form.age_days} onChange={(e) => setForm({ ...form, age_days: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Booster Interval (days)</label>
-              <input type="number" value={form.booster_interval_days} onChange={(e) => setForm({ ...form, booster_interval_days: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg text-sm" />
-            </div>
-          </div>
-          <div>
-            <SearchableSelect label="Linked Inventory Item (optional)" value={form.inventory_item_id} onChange={(v) => setForm({ ...form, inventory_item_id: v })} options={inventory} placeholder="Link to stock item..." />
-            <p className="text-xs text-gray-400 mt-1">Linking shows stock levels and enables deduction when vaccine is administered.</p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
-              className="w-full px-3 py-2 border rounded-lg text-sm" />
-          </div>
-          <div className="flex gap-3">
-            <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">Save</button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-          </div>
-        </form>
+        <Card className="mb-4">
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {error && <p className="text-sm text-clay-600 dark:text-clay-400">{error}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Vaccine Name *" value={form.vaccine_name} onChange={(e) => setForm({ ...form, vaccine_name: e.target.value })} required />
+                <SearchableSelect label="Target Species" value={form.target_species} onChange={(v) => setForm({ ...form, target_species: v })} options={speciesOpts} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Age (days)" type="number" value={form.age_days} onChange={(e) => setForm({ ...form, age_days: e.target.value })} />
+                <Input label="Booster Interval (days)" type="number" value={form.booster_interval_days} onChange={(e) => setForm({ ...form, booster_interval_days: e.target.value })} />
+              </div>
+              <SearchableSelect label="Linked Inventory Item" value={form.inventory_item_id} onChange={(v) => setForm({ ...form, inventory_item_id: v })} options={inventory} placeholder="Link to stock item..." />
+              <Textarea label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} />
+              <div className="flex gap-3">
+                <Button type="submit" size="sm">Save</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      {loading ? <div className="text-center py-12 text-gray-500">Loading...</div> : (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">Vaccine</th>
-                <th className="px-4 py-3 text-left font-medium">Species</th>
-                <th className="px-4 py-3 text-left font-medium">Age (days)</th>
-                <th className="px-4 py-3 text-left font-medium">Booster</th>
-                <th className="px-4 py-3 text-left font-medium">Stock</th>
-                <th className="px-4 py-3 text-left font-medium">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {schedules.map((s) => (
-                <tr key={s.id}>
-                  <td className="px-4 py-3 font-medium">{s.vaccine_name}</td>
-                  <td className="px-4 py-3">{s.target_species}</td>
-                  <td className="px-4 py-3">{s.age_days || '—'}</td>
-                  <td className="px-4 py-3">{s.booster_interval_days ? `${s.booster_interval_days} days` : '—'}</td>
-                  <td className="px-4 py-3">
-                    {s.inventory_item_name ? (
-                      <span className={parseFloat(s.inventory_stock) <= 0 ? 'text-red-600' : 'text-gray-700'}>
-                        {s.inventory_stock} {s.inventory_unit}
-                        <span className="text-xs text-gray-400 ml-1">({s.inventory_item_name})</span>
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">No stock linked</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{s.notes || '—'}</td>
-                </tr>
-              ))}
-              {schedules.length === 0 && <tr><td colSpan="6" className="px-4 py-8 text-center text-gray-500">No schedules defined.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={schedules}
+        loading={loading}
+        emptyTitle="No vaccination schedules defined"
+        emptyDescription="Create the first schedule to track vaccinations for your livestock."
+        emptyAction={<Button size="sm" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" /> Add Schedule</Button>}
+      />
     </div>
   )
 }
