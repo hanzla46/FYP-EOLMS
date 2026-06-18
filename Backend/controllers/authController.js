@@ -134,4 +134,47 @@ const listUsers = async (req, res) => {
   }
 };
 
-module.exports = { register, login, me, listUsers };
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { full_name, role, email, username } = req.body;
+
+    const [users] = await sequelize.query('SELECT * FROM users WHERE id = :id', { replacements: { id } });
+    if (users.length === 0) return res.status(404).json({ error: 'User not found.' });
+
+    const fields = [];
+    const replacements = { id };
+    if (full_name) { fields.push('full_name = :full_name'); replacements.full_name = full_name; }
+    if (role && ['Admin', 'Vet', 'Worker'].includes(role)) { fields.push('role = :role'); replacements.role = role; }
+    if (email) { fields.push('email = :email'); replacements.email = email; }
+
+    if (fields.length === 0) return res.status(400).json({ error: 'No valid fields to update.' });
+
+    await sequelize.query(`UPDATE users SET ${fields.join(', ')} WHERE id = :id`, { replacements });
+    const [updated] = await sequelize.query('SELECT id, username, email, full_name, role, is_active, created_at FROM users WHERE id = :id', { replacements: { id } });
+    res.json({ message: 'User updated.', data: updated[0] });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+const toggleStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [users] = await sequelize.query('SELECT * FROM users WHERE id = :id', { replacements: { id } });
+    if (users.length === 0) return res.status(404).json({ error: 'User not found.' });
+
+    const newStatus = !users[0].is_active;
+    await sequelize.query('UPDATE users SET is_active = :status WHERE id = :id', { replacements: { status: newStatus ? 1 : 0, id } });
+
+    const [updated] = await sequelize.query('SELECT id, username, email, full_name, role, is_active, created_at FROM users WHERE id = :id', { replacements: { id } });
+    res.json({ message: `User ${newStatus ? 'activated' : 'deactivated'}.`, data: updated[0] });
+  } catch (error) {
+    console.error('Toggle status error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+};
+
+module.exports = { register, login, me, listUsers, updateUser, toggleStatus };

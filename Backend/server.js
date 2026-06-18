@@ -15,6 +15,7 @@ const financeRoutes = require('./routes/finance');
 const alertRoutes = require('./routes/alerts');
 const uploadRoutes = require('./routes/uploads');
 const cronRoutes = require('./routes/cron');
+const dashboardRoute = require('./routes/dashboard');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/alerts', alertRoutes);
 app.use('/api/v1/uploads', uploadRoutes);
 app.use('/api/v1/cron', cronRoutes);
+app.use('/api/v1/dashboard', dashboardRoute);
 
 let initialized = false;
 

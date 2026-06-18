@@ -17,6 +17,7 @@ import AddProductionPage from './pages/AddProductionPage'
 import FinancePage from './pages/FinancePage'
 import AlertsPage from './pages/AlertsPage'
 import UsersPage from './pages/UsersPage'
+import DashboardPage from './pages/DashboardPage'
 import NotificationBell from './components/NotificationBell'
 
 function Layout() {
@@ -66,18 +67,7 @@ function Layout() {
       </nav>
       <main>
         <Routes>
-          <Route path="/" element={
-            <div className="flex items-center justify-center min-h-[80vh]">
-              <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">EOLMS</h1>
-                <p className="text-gray-500">Enterprise Online Livestock Management System</p>
-                <div className="mt-6 flex gap-3 justify-center">
-                  <Link to="/animals" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">View Animals</Link>
-                  <Link to="/animals/register" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium">Register Animal</Link>
-                </div>
-              </div>
-            </div>
-          } />
+          <Route path="/" element={<DashboardPage />} />
           <Route path="/animals" element={<AnimalsPage />} />
           <Route path="/animals/register" element={<AnimalRegisterPage />} />
           <Route path="/animals/:id" element={<AnimalDetailPage />} />
