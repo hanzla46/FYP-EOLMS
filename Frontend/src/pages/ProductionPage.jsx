@@ -22,7 +22,7 @@ export default function ProductionPage() {
       if (f.date_to) params.date_to = f.date_to
       const [logRes, dashRes] = await Promise.all([
         productionService.list(params),
-        productionService.dashboard(),
+        productionService.dashboard(params),
       ])
       setLogs(logRes.data.data)
       setDashboard(dashRes.data.data)

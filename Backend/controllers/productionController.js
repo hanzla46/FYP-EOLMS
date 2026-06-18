@@ -161,26 +161,37 @@ const productionStats = async (req, res) => {
 
 const dashboard = async (req, res) => {
   try {
+    const { date_from, date_to } = req.query;
+
+    let dateWhere = '';
+    const replacements = {};
+    if (date_from) { dateWhere += ' AND log_date >= :date_from'; replacements.date_from = date_from; }
+    if (date_to) { dateWhere += ' AND log_date <= :date_to'; replacements.date_to = date_to; }
+
     const [summary] = await sequelize.query(
       `SELECT production_type, COUNT(*) AS total_logs, SUM(quantity) AS total_quantity,
               AVG(quantity) AS avg_quantity, COUNT(DISTINCT animal_id) AS animal_count,
               DATE(MAX(log_date)) AS last_recorded
-       FROM production_logs GROUP BY production_type`
+       FROM production_logs WHERE 1=1 ${dateWhere} GROUP BY production_type`,
+      { replacements }
     );
 
     const [byDate] = await sequelize.query(
       `SELECT log_date, production_type, SUM(quantity) AS daily_total
-       FROM production_logs WHERE log_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-       GROUP BY log_date, production_type ORDER BY log_date DESC`
+       FROM production_logs WHERE log_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) ${dateWhere}
+       GROUP BY log_date, production_type ORDER BY log_date DESC`,
+      { replacements }
     );
 
     const [topAnimals] = await sequelize.query(
       `SELECT a.id, a.tag_number, a.species, pl.production_type, SUM(pl.quantity) AS total_production
        FROM production_logs pl
        JOIN animals a ON pl.animal_id = a.id
+       WHERE 1=1 ${dateWhere}
        GROUP BY a.id, pl.production_type
        ORDER BY total_production DESC
-       LIMIT 10`
+       LIMIT 10`,
+      { replacements }
     );
 
     res.json({ message: 'Dashboard data.', data: { summary, by_date: byDate, top_animals: topAnimals } });
