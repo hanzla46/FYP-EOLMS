@@ -1,4 +1,3 @@
-
 ```
 FYP EOLMS
 ├─ Backend
@@ -51,8 +50,8 @@ FYP EOLMS
 ├─ Frontend
 │  ├─ dist
 │  │  ├─ assets
-│  │  │  ├─ index-B-IWCniq.css
-│  │  │  └─ index-BZ_dgIHN.js
+│  │  │  ├─ index-4JJhrlkz.js
+│  │  │  └─ index-DF6cTCuP.css
 │  │  ├─ favicon.svg
 │  │  ├─ icons.svg
 │  │  └─ index.html
@@ -73,11 +72,37 @@ FYP EOLMS
 │  │  │  └─ vite.svg
 │  │  ├─ components
 │  │  │  ├─ FileUpload.jsx
+│  │  │  ├─ icons
+│  │  │  │  └─ SpeciesIcons.jsx
+│  │  │  ├─ layout
+│  │  │  │  ├─ AppShell.jsx
+│  │  │  │  ├─ Sidebar.jsx
+│  │  │  │  └─ Topbar.jsx
 │  │  │  ├─ NotificationBell.jsx
-│  │  │  └─ SearchableSelect.jsx
+│  │  │  ├─ SearchableSelect.jsx
+│  │  │  └─ ui
+│  │  │     ├─ Badge.jsx
+│  │  │     ├─ Button.jsx
+│  │  │     ├─ Card.jsx
+│  │  │     ├─ ChartWrapper.jsx
+│  │  │     ├─ DataTable.jsx
+│  │  │     ├─ DatePicker.jsx
+│  │  │     ├─ Dialog.jsx
+│  │  │     ├─ Drawer.jsx
+│  │  │     ├─ EmptyState.jsx
+│  │  │     ├─ FilterBar.jsx
+│  │  │     ├─ Input.jsx
+│  │  │     ├─ Skeleton.jsx
+│  │  │     ├─ StatCard.jsx
+│  │  │     ├─ Tabs.jsx
+│  │  │     ├─ TagBadge.jsx
+│  │  │     └─ Tooltip.jsx
 │  │  ├─ context
-│  │  │  └─ AuthContext.jsx
+│  │  │  ├─ AuthContext.jsx
+│  │  │  └─ ThemeContext.jsx
 │  │  ├─ index.css
+│  │  ├─ lib
+│  │  │  └─ utils.js
 │  │  ├─ main.jsx
 │  │  ├─ pages
 │  │  │  ├─ AddInventoryPage.jsx
@@ -86,17 +111,21 @@ FYP EOLMS
 │  │  │  ├─ AnimalDetailPage.jsx
 │  │  │  ├─ AnimalRegisterPage.jsx
 │  │  │  ├─ AnimalsPage.jsx
+│  │  │  ├─ BreedingKanbanPage.jsx
 │  │  │  ├─ BreedingPage.jsx
 │  │  │  ├─ DashboardPage.jsx
 │  │  │  ├─ FinancePage.jsx
 │  │  │  ├─ HealthRecordsPage.jsx
+│  │  │  ├─ HealthTimelinePage.jsx
 │  │  │  ├─ InventoryDetailPage.jsx
 │  │  │  ├─ InventoryPage.jsx
 │  │  │  ├─ LoginPage.jsx
 │  │  │  ├─ NewHealthRecordPage.jsx
 │  │  │  ├─ ProductionPage.jsx
 │  │  │  ├─ RegisterPage.jsx
+│  │  │  ├─ StyleguidePage.jsx
 │  │  │  ├─ UsersPage.jsx
+│  │  │  ├─ VaccinationCalendarPage.jsx
 │  │  │  └─ VaccinationSchedulesPage.jsx
 │  │  └─ services
 │  │     ├─ alertService.js
@@ -114,6 +143,6 @@ FYP EOLMS
 │  │     └─ vaccinationService.js
 │  ├─ vercel.json
 │  └─ vite.config.js
-└─ Implementation.md
+└─ README.md
 
 ```
