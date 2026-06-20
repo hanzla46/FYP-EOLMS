@@ -52,11 +52,12 @@ export default function UsersPage() {
     }
   }
 
-  const handleDeactivate = async (id) => {
-    if (!window.confirm('Deactivate this user?')) return
+  const handleToggleStatus = async (row) => {
+    const action = row.is_active ? 'Deactivate' : 'Activate'
+    if (!window.confirm(`${action} this user?`)) return
     try {
-      await userService.updateStatus(id, 'Disabled')
-      toast.success('User deactivated')
+      await userService.toggleStatus(row.id)
+      toast.success(`User ${action.toLowerCase()}d`)
       fetchUsers()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed.')
@@ -79,8 +80,8 @@ export default function UsersPage() {
       render: (val) => <StatusPill status={val} />,
     },
     {
-      key: 'status', label: 'Status',
-      render: (val) => <StatusPill status={val === 'Disabled' ? 'Disabled' : 'Active'} />,
+      key: 'is_active', label: 'Status',
+      render: (val) => <StatusPill status={val ? 'Active' : 'Disabled'} />,
     },
     { key: 'created_at', label: 'Joined', render: (val) => val?.split('T')[0] },
     {
@@ -90,7 +91,7 @@ export default function UsersPage() {
         return (
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleEdit(row) }}>Edit</Button>
-            <Button variant="ghost" size="sm" className="text-clay-600 dark:text-clay-400 hover:bg-clay-100/30" onClick={(e) => { e.stopPropagation(); handleDeactivate(val) }}>Deactivate</Button>
+            <Button variant="ghost" size="sm" className="text-clay-600 dark:text-clay-400 hover:bg-clay-100/30" onClick={(e) => { e.stopPropagation(); handleToggleStatus(row) }}>{row.is_active ? 'Deactivate' : 'Activate'}</Button>
           </div>
         )
       },
